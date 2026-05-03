@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
         console.log('Logged:', logEntry.trim());
     });
 
-    res.send('Hello 👋 Your visit has been recorded.');
+    res.send('Hello 👋 Your visit has been recorded, thanks for your visit!');
 });
 
 const server = app.listen(PORT, () => {

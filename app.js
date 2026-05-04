@@ -92,7 +92,7 @@ app.get('/', (req, res) => {
         console.log('Logged:', logEntry.trim());
     });
 
-    res.send('Well hello 👋 Your visit has been recorded, thanks for your visit!');
+    res.send('Anyone there 👋 Your visit has been recorded, thanks for your visit!');
 });
 
 app.get('/logs', (req, res) => {

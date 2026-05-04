@@ -317,11 +317,11 @@ app.get('/hangman', (req, res) => {
                 </div>
 
                 <div class="section hidden" id="teamSelectionPhase">
-                    <h2>Phase 1: Choose Your Team</h2>
-                    <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select which team you're playing on:</p>
+                    <h2>Phase 1: Choose Your Role</h2>
+                    <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select your role in the game:</p>
                     <div class="team-selection">
-                        <button class="team-btn team-red" onclick="selectTeam('red')">🔴 Team Red</button>
-                        <button class="team-btn team-blue" onclick="selectTeam('blue')">🔵 Team Blue</button>
+                        <button class="team-btn team-red" onclick="selectTeam('creator')">✍️ Word Creator</button>
+                        <button class="team-btn team-blue" onclick="selectTeam('guesser')">🔍 Guesser</button>
                     </div>
                     <div class="players-status" id="playersWaiting"></div>
                 </div>
@@ -408,15 +408,16 @@ app.get('/hangman', (req, res) => {
                     document.getElementById('teamSelectionPhase').classList.add('hidden');
                     document.getElementById('waitingPhase').classList.remove('hidden');
                     
-                    const emoji = selectedTeam === 'red' ? '🔴' : '🔵';
-                    document.getElementById('waitingTitle').textContent = \`\${emoji} Waiting for opponent...\`;
+                    const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
+                    const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
+                    document.getElementById('waitingTitle').textContent = \`\${emoji} \${roleText} - Waiting for opponent...\`;
                     updatePlayersConnected();
                 });
 
                 socket.on('game-started', (data) => {
                     gameState = data.game;
                     const wordTeam = data.game.wordTeam;
-                    const guessTeam = wordTeam === 'red' ? 'blue' : 'red';
+                    const guessTeam = wordTeam === 'creator' ? 'guesser' : 'creator';
                     const isWordTeam = selectedTeam === wordTeam;
                     
                     if (isWordTeam) {
@@ -428,7 +429,7 @@ app.get('/hangman', (req, res) => {
 
                 socket.on('word-submitted', (data) => {
                     gameState = data.game;
-                    showGamePhase(selectedTeam === 'red' ? 'blue' : 'red');
+                    showGamePhase(selectedTeam === 'creator' ? 'guesser' : 'creator');
                 });
 
                 socket.on('letter-guessed', (data) => {
@@ -497,11 +498,12 @@ app.get('/hangman', (req, res) => {
 
                     const setupTitle = document.getElementById('setupTitle');
                     const teamInfoSetup = document.getElementById('teamInfoSetup');
-                    const emoji = selectedTeam === 'red' ? '🔴' : '🔵';
+                    const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
+                    const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
 
-                    setupTitle.textContent = \`\${emoji} Enter a word for the other team to guess\`;
-                    teamInfoSetup.textContent = \`\${emoji} Your team is setting the word\`;
-                    teamInfoSetup.className = selectedTeam === 'red' ? 'team-info team-red-info' : 'team-info team-blue-info';
+                    setupTitle.textContent = \`\${emoji} Enter a word for the other player to guess\`;
+                    teamInfoSetup.textContent = \`\${emoji} Your role: \${roleText} - Setting the word\`;
+                    teamInfoSetup.className = selectedTeam === 'creator' ? 'team-info team-red-info' : 'team-info team-blue-info';
                 }
 
                 function showGamePhase(guessingTeam) {
@@ -512,16 +514,19 @@ app.get('/hangman', (req, res) => {
                     document.getElementById('gamePhase').classList.remove('hidden');
 
                     const teamInfoGame = document.getElementById('teamInfoGame');
+                    const isCreator = selectedTeam === 'creator';
                     const isGuessing = selectedTeam === guessingTeam;
-                    const emoji = selectedTeam === 'red' ? '🔴' : '🔵';
-                    const otherEmoji = selectedTeam === 'red' ? '🔵' : '🔴';
+                    const emoji = isCreator ? '✍️' : '🔍';
+                    const otherEmoji = isCreator ? '🔍' : '✍️';
+                    const myRole = isCreator ? 'Word Creator' : 'Guesser';
+                    const otherRole = isCreator ? 'Guesser' : 'Word Creator';
 
                     if (isGuessing) {
-                        teamInfoGame.textContent = \`\${emoji} Your team is guessing!\`;
-                        teamInfoGame.className = selectedTeam === 'red' ? 'team-info team-red-info' : 'team-info team-blue-info';
+                        teamInfoGame.textContent = \`\${emoji} Your role: \${myRole} - You are guessing!\`;
+                        teamInfoGame.className = isCreator ? 'team-info team-red-info' : 'team-info team-blue-info';
                     } else {
-                        teamInfoGame.textContent = \`\${otherEmoji} The other team is guessing\`;
-                        teamInfoGame.className = selectedTeam === 'red' ? 'team-info team-blue-info' : 'team-info team-red-info';
+                        teamInfoGame.textContent = \`\${otherEmoji} The \${otherRole} is guessing\`;
+                        teamInfoGame.className = isCreator ? 'team-info team-blue-info' : 'team-info team-red-info';
                     }
 
                     createLetterButtons();
@@ -543,6 +548,12 @@ app.get('/hangman', (req, res) => {
                 function createLetterButtons() {
                     const container = document.getElementById('letterButtons');
                     container.innerHTML = '';
+                    
+                    // Creators cannot guess - only show buttons to guessers
+                    if (gameMode === 'multiplayer' && selectedTeam === 'creator') {
+                        container.innerHTML = '<p style="text-align: center; color: #999; margin: 20px 0;">Waiting for the Guesser to guess letters...</p>';
+                        return;
+                    }
                     
                     for (let i = 65; i <= 90; i++) {
                         const letter = String.fromCharCode(i);
@@ -585,6 +596,12 @@ app.get('/hangman', (req, res) => {
                 }
 
                 function guessLetter(letter) {
+                    // Creators cannot guess
+                    if (gameMode === 'multiplayer' && selectedTeam === 'creator') {
+                        alert('As the Word Creator, you cannot guess! Watch the Guesser try to figure out your word.');
+                        return;
+                    }
+                    
                     if (!gameState.word || gameState.state !== 'playing') return;
                     
                     socket.emit('guess-letter', { gameId, letter });
@@ -696,17 +713,14 @@ app.get('/hangman', (req, res) => {
                     const clueAlreadyShown = statusDiv.getAttribute('data-clue-shown') === 'true';
                     
                     if (wordGuessed) {
-                        const winTeam = gameState.wordTeam === 'red' ? 'blue' : 'red';
-                        const emoji = winTeam === 'red' ? '🔴' : '🔵';
-                        statusDiv.textContent = \`🎉 \${emoji} Team \${winTeam.toUpperCase()} Won! The word was: \${gameState.word}\`;
+                        statusDiv.textContent = \`🎉 Guesser Won! The word was: \${gameState.word}\`;
                         statusDiv.className = 'status win';
                         statusDiv.removeAttribute('data-clue-shown');
                         showGameButtons(true);
                         // Disable all buttons immediately
                         document.querySelectorAll('.letter-btn').forEach(btn => btn.disabled = true);
                     } else if (outOfLives) {
-                        const emoji = gameState.wordTeam === 'red' ? '🔴' : '🔵';
-                        statusDiv.textContent = \`💀 \${emoji} Team \${gameState.wordTeam.toUpperCase()} wins! Word was: \${gameState.word}\`;
+                        statusDiv.textContent = \`💀 Word Creator Wins! The word was: \${gameState.word}\`;
                         statusDiv.className = 'status lose';
                         statusDiv.removeAttribute('data-clue-shown');
                         showGameButtons(true);
@@ -791,7 +805,10 @@ app.get('/hangman', (req, res) => {
                     const container = document.getElementById('gameButtons');
                     container.innerHTML = '';
                     
+                    // Hide letter buttons when game ends
                     if (gameEnded) {
+                        document.getElementById('letterButtons').style.display = 'none';
+                        
                         const playAgainBtn = document.createElement('button');
                         playAgainBtn.textContent = '🔄 Play Again';
                         playAgainBtn.style.background = '#27ae60';
@@ -804,6 +821,9 @@ app.get('/hangman', (req, res) => {
                         playAgainBtn.style.cursor = 'pointer';
                         playAgainBtn.onclick = playAgain;
                         container.appendChild(playAgainBtn);
+                    } else {
+                        // Show letter buttons if game is still playing
+                        document.getElementById('letterButtons').style.display = 'block';
                     }
                     
                     const quitBtn = document.createElement('button');

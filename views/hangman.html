@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Hangman Game</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="./css/hangman.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Hangman Game</h1>
+
+        <div class="section" id="modeSelectionPhase">
+            <h2>Select Game Mode</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Choose how you want to play:</p>
+            <div class="mode-selection">
+                <button class="mode-btn mode-solo" onclick="selectMode('solo')">🎯 Solo Mode</button>
+                <button class="mode-btn mode-multiplayer" onclick="selectMode('multiplayer')">👥 Multiplayer</button>
+            </div>
+        </div>
+
+        <div class="section hidden" id="teamSelectionPhase">
+            <h2>Phase 1: Choose Your Role</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select your role in the game:</p>
+            <div class="team-selection">
+                <button class="team-btn team-red" onclick="selectTeam('creator')">✍️ Word Creator</button>
+                <button class="team-btn team-blue" onclick="selectTeam('guesser')">🔍 Guesser</button>
+            </div>
+            <div class="players-status" id="playersWaiting"></div>
+        </div>
+
+        <div class="section hidden" id="waitingPhase">
+            <h2 id="waitingTitle"></h2>
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+            <div class="players-status" id="playersConnected"></div>
+        </div>
+
+        <div class="section hidden" id="setupPhase">
+            <div class="team-info" id="teamInfoSetup"></div>
+            <h2 id="setupTitle"></h2>
+            <label for="wordInput"></label><input type="text" id="wordInput" placeholder="Enter a word" maxlength="20">
+            <button onclick="submitWord()">Start Game</button>
+        </div>
+
+        <div class="section hidden" id="gamePhase">
+            <div class="team-info" id="teamInfoGame"></div>
+            <h2>Guess the Word!</h2>
+
+            <div class="game-state">
+                <div>Lives Remaining: <span id="lives">6</span>/6</div>
+                <div class="word-display" id="wordDisplay">_ _ _</div>
+                <div class="guessed-letters">Guessed Letters: <span id="guessedList"></span></div>
+                <div class="status" id="status"></div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3>Choose a letter:</h3>
+                <div id="letterButtons"></div>
+            </div>
+
+            <div id="gameButtons" style="text-align: center; margin-top: 20px;">
+                <button onclick="quitGame()" style="background: #e74c3c;">Quit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/hangman.js"></script>
+</body>
+</html>
+

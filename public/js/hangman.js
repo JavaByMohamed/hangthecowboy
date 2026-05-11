@@ -456,6 +456,11 @@ function updateSoloGameDisplay() {
     }
 }
 
+// Play again - refresh page for fresh session
+function playAgain() {
+    location.reload();
+}
+
 // Quit game
 function quitGame() {
     if (gameMode === 'multiplayer') {
@@ -464,19 +469,6 @@ function quitGame() {
     location.reload();
 }
 
-// Play again
-function playAgain() {
-    if (gameMode === 'solo') {
-        startSoloMode();
-    } else {
-        // For multiplayer, go back to team selection
-        document.getElementById('gamePhase').classList.add('hidden');
-        document.getElementById('teamSelectionPhase').classList.remove('hidden');
-        selectedTeam = '';
-        multiplayerClueShown = false;
-        updatePlayersWaiting();
-    }
-}
 
 // Show game buttons (play again / quit)
 function showGameButtons(gameEnded = false) {

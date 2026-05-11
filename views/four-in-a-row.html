@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Four in a Row - Connect Game</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/four-in-a-row.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🔴 Four in a Row 🟡</h1>
+
+        <!-- Color Selection Phase -->
+        <div class="section" id="colorSelectionPhase">
+            <h2>Phase 1: Choose Your Color</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select your playing color:</p>
+            <div class="color-selection">
+                <button class="color-btn color-red" onclick="selectColor('red')">🔴 Red</button>
+                <button class="color-btn color-yellow" onclick="selectColor('yellow')">🟡 Yellow</button>
+            </div>
+            <div class="players-status" id="playersWaiting"></div>
+        </div>
+
+        <!-- Waiting Phase -->
+        <div class="section hidden" id="waitingPhase">
+            <h2 id="waitingTitle"></h2>
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+            <div class="players-status" id="playersConnected"></div>
+        </div>
+
+        <!-- Game Phase -->
+        <div class="section hidden" id="gamePhase">
+            <div class="game-info">
+                <div class="player-info" id="player1Info"></div>
+                <div class="turn-info" id="turnInfo"></div>
+                <div class="player-info" id="player2Info"></div>
+            </div>
+
+            <div class="board-container">
+                <div class="board" id="gameBoard"></div>
+            </div>
+
+            <div class="game-status" id="gameStatus"></div>
+
+            <div id="gameButtons" style="text-align: center; margin-top: 20px;">
+                <button onclick="quitGame()" style="background: #e74c3c;">Quit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/four-in-a-row.js"></script>
+</body>
+</html>
+

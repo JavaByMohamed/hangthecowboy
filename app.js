@@ -173,86 +173,228 @@ app.get('/games', (req, res) => {
         <head>
             <title>Game Menu</title>
             <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
                 body { 
-                    font-family: sans-serif; 
-                    padding: 30px; 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
-                    margin: 0;
-                }
-                .container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 40px;
-                    border-radius: 10px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                    text-align: center;
-                }
-                h1 {
-                    color: #667eea;
-                    margin-bottom: 40px;
-                }
-                .games-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 20px;
-                    margin: 30px 0;
-                }
-                .game-card {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 10px;
-                    cursor: pointer;
-                    transition: transform 0.3s;
-                    text-decoration: none;
+                    padding: 40px 20px;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
                 }
+                
+                .container {
+                    max-width: 1000px;
+                    width: 100%;
+                    background: white;
+                    padding: 50px;
+                    border-radius: 15px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    text-align: center;
+                }
+                
+                h1 {
+                    color: #667eea;
+                    margin-bottom: 15px;
+                    font-size: 42px;
+                    font-weight: bold;
+                }
+                
+                .subtitle {
+                    color: #888;
+                    font-size: 18px;
+                    margin-bottom: 50px;
+                }
+                
+                .games-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 30px;
+                    margin: 40px 0;
+                }
+                
+                .game-card {
+                    background: white;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    text-decoration: none;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                }
+                
                 .game-card:hover {
-                    transform: scale(1.05);
+                    transform: scale(1.12) translateY(-10px);
+                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
                 }
+                
+                .game-card-image {
+                    width: 100%;
+                    height: 200px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .game-card:nth-child(1) .game-card-image {
+                    background-image: url('/images/hangman.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 348px;
+                }
+                
+                .game-card:nth-child(1) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(2) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(2) .game-card-image {
+                    background-image: url('/images/fourinarow.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 348px;
+                }
+                
+                .game-card-icon {
+                    font-size: 100px;
+                    z-index: 1;
+                }
+                
+                .game-card-content {
+                    padding: 30px 20px;
+                    flex-grow: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+                
                 .game-card h2 {
-                    margin: 10px 0;
-                    font-size: 24px;
+                    color: #333;
+                    margin: 15px 0 10px;
+                    font-size: 28px;
+                    font-weight: bold;
                 }
+                
                 .game-card p {
-                    margin: 10px 0;
-                    font-size: 14px;
-                    opacity: 0.9;
+                    color: #333;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    margin: 5px 0;
                 }
-                .emoji {
-                    font-size: 48px;
-                    margin: 10px 0;
+                
+                .game-card .game-type {
+                    display: inline-block;
+                    background: #f0f0f0;
+                    color: #667eea;
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-top: 10px;
+                }
+                
+                .game-card:nth-child(1) .game-type {
+                    background: #f8efe1;
+                    color: #f39c12;
+                }
+                
+                .game-card:nth-child(2) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .footer {
+                    margin-top: 50px;
+                    padding-top: 30px;
+                    border-top: 1px solid #eee;
+                }
+                
+                .back-link {
+                    color: #667eea;
+                    text-decoration: none;
+                    font-size: 16px;
+                    transition: color 0.3s;
+                }
+                
+                .back-link:hover {
+                    color: #764ba2;
+                }
+                
+                @media (max-width: 600px) {
+                    .container {
+                        padding: 30px 20px;
+                    }
+                    
+                    h1 {
+                        font-size: 32px;
+                    }
+                    
+                    .game-card-icon {
+                        font-size: 70px;
+                    }
+                    
+                    .games-grid {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
                 }
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>🎮 Game Menu</h1>
-                <p style="font-size: 18px; color: #666; margin-bottom: 40px;">Choose a game to play:</p>
+                <p class="subtitle">Choose a game to play:</p>
                 
                 <div class="games-grid">
+                    <!-- Hangman Card -->
                     <a href="/hangman" class="game-card">
-                        <div class="emoji">🎯</div>
-                        <h2>Hangman</h2>
-                        <p>Solo or Multiplayer<br>Guess the word!</p>
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Hangman</h2>
+                            <p>Guess the word before you run out of lives!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎯 Solo or Multiplayer</span>
+                            </div>
+                        </div>
                     </a>
                     
+                    <!-- Four in a Row Card -->
                     <a href="/four-in-a-row" class="game-card">
-                        <div class="emoji">🔴</div>
-                        <h2>Four in a Row</h2>
-                        <p>Two Player<br>Connect 4 pieces!</p>
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Four in a Row</h2>
+                            <p>Connect 4 of your pieces to win!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">👥 Two Player</span>
+                            </div>
+                        </div>
                     </a>
                 </div>
 
-                <hr style="margin: 40px 0; border: none; border-top: 1px solid #ddd;">
-                <p style="color: #999; font-size: 14px;">
-                    <a href="/" style="color: #667eea; text-decoration: none;">← Back to Home</a>
-                </p>
+                <div class="footer">
+                    <p style="color: #999; font-size: 14px;">
+                        <a href="/" class="back-link">← Back to Home</a>
+                    </p>
+                </div>
             </div>
         </body>
         </html>

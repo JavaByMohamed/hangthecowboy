@@ -235,3 +235,55 @@ button:hover {
     100% { transform: rotate(360deg); }
 }
 
+/* Hangman Drawing */
+.game-container {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.hangman-display {
+    background: #f9f9f9;
+    border: 3px solid #667eea;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hangman-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.hangman-part {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.hangman-part.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        stroke-width: 6;
+    }
+    100% {
+        opacity: 1;
+        stroke-width: 4;
+    }
+}
+
+.game-info-section {
+    flex: 1;
+    min-width: 250px;
+}
+

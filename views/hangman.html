@@ -48,11 +48,48 @@
             <div class="team-info" id="teamInfoGame"></div>
             <h2>Guess the Word!</h2>
 
-            <div class="game-state">
-                <div>Lives Remaining: <span id="lives">6</span>/6</div>
-                <div class="word-display" id="wordDisplay">_ _ _</div>
-                <div class="guessed-letters">Guessed Letters: <span id="guessedList"></span></div>
-                <div class="status" id="status"></div>
+            <div class="game-container">
+                <!-- Hangman Drawing -->
+                <div class="hangman-display">
+                    <svg width="200" height="250" viewBox="0 0 200 250" class="hangman-svg">
+                        <!-- Gallows -->
+                        <line x1="20" y1="230" x2="130" y2="230" stroke="black" stroke-width="4"/>
+                        <line x1="50" y1="230" x2="50" y2="20" stroke="black" stroke-width="4"/>
+                        <line x1="50" y1="20" x2="130" y2="20" stroke="black" stroke-width="4"/>
+                        <line x1="130" y1="20" x2="130" y2="50" stroke="black" stroke-width="4"/>
+
+                        <!-- Head - Stage 1 -->
+                        <circle id="hangman-head" cx="130" cy="70" r="20" stroke="black" stroke-width="4" fill="none" class="hangman-part hidden"/>
+
+                        <!-- Body - Stage 2 -->
+                        <line id="hangman-body" x1="130" y1="90" x2="130" y2="150" stroke="black" stroke-width="4" class="hangman-part hidden"/>
+
+                        <!-- Left Arm - Stage 3 -->
+                        <line id="hangman-left-arm" x1="130" y1="110" x2="100" y2="130" stroke="black" stroke-width="4" class="hangman-part hidden"/>
+
+                        <!-- Right Arm - Stage 4 -->
+                        <line id="hangman-right-arm" x1="130" y1="110" x2="160" y2="130" stroke="black" stroke-width="4" class="hangman-part hidden"/>
+
+                        <!-- Left Leg - Stage 5 -->
+                        <line id="hangman-left-leg" x1="130" y1="150" x2="110" y2="190" stroke="black" stroke-width="4" class="hangman-part hidden"/>
+
+                        <!-- Right Leg - Stage 6 -->
+                        <line id="hangman-right-leg" x1="130" y1="150" x2="150" y2="190" stroke="black" stroke-width="4" class="hangman-part hidden"/>
+
+                        <!-- Face - adds life to the drawing -->
+                        <circle id="hangman-left-eye" cx="123" cy="65" r="2" fill="black" class="hangman-part hidden"/>
+                        <circle id="hangman-right-eye" cx="137" cy="65" r="2" fill="black" class="hangman-part hidden"/>
+                        <path id="hangman-mouth" d="M 123 75 Q 130 78 137 75" stroke="black" stroke-width="2" fill="none" class="hangman-part hidden"/>
+                    </svg>
+                </div>
+
+                <!-- Game Info -->
+                <div class="game-info-section">
+                    <div>Lives Remaining: <span id="lives">6</span>/6</div>
+                    <div class="word-display" id="wordDisplay">_ _ _</div>
+                    <div class="guessed-letters">Guessed Letters: <span id="guessedList"></span></div>
+                    <div class="status" id="status"></div>
+                </div>
             </div>
 
             <div style="margin: 20px 0;">

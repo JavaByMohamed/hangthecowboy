@@ -26,7 +26,49 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Error loading word library:', error));
 });
 
-// Socket.IO event listeners
+// Update hangman drawing based on wrong guesses
+function updateHangmanDrawing(wrongGuessCount) {
+    const hangmanParts = [
+        'hangman-head',
+        'hangman-body',
+        'hangman-left-arm',
+        'hangman-right-arm',
+        'hangman-left-leg',
+        'hangman-right-leg'
+    ];
+    
+    // Also show face when head is shown
+    const faceParts = ['hangman-left-eye', 'hangman-right-eye', 'hangman-mouth'];
+    
+    // Show hangman parts up to the number of wrong guesses
+    for (let i = 0; i < hangmanParts.length; i++) {
+        const element = document.getElementById(hangmanParts[i]);
+        if (element) {
+            if (i < wrongGuessCount) {
+                element.classList.remove('hidden');
+            } else {
+                element.classList.add('hidden');
+            }
+        }
+    }
+    
+    // Show face parts when head is visible
+    if (wrongGuessCount > 0) {
+        faceParts.forEach(part => {
+            const element = document.getElementById(part);
+            if (element) {
+                element.classList.remove('hidden');
+            }
+        });
+    } else {
+        faceParts.forEach(part => {
+            const element = document.getElementById(part);
+            if (element) {
+                element.classList.add('hidden');
+            }
+        });
+    }
+}
 socket.on('connect', () => {
     console.log('Connected to server');
     if (gameMode === 'multiplayer') {
@@ -370,6 +412,9 @@ function updateGameDisplay() {
     document.getElementById('guessedList').textContent = 
         [...gameState.guessedLetters, ...gameState.wrongGuesses].sort().join(', ') || 'None';
 
+    // Update hangman drawing
+    updateHangmanDrawing(gameState.wrongGuesses.length);
+
     const statusDiv = document.getElementById('status');
     const wordGuessed = gameState.word.split('').every(letter => gameState.guessedLetters.includes(letter));
     const outOfLives = gameState.wrongGuesses.length >= gameState.maxLives;
@@ -421,6 +466,9 @@ function updateSoloGameDisplay() {
     document.getElementById('lives').textContent = SOLO_MAX_LIVES - soloWrongGuesses.length;
     document.getElementById('guessedList').textContent = 
         [...soloGuessedLetters, ...soloWrongGuesses].sort().join(', ') || 'None';
+
+    // Update hangman drawing
+    updateHangmanDrawing(soloWrongGuesses.length);
 
     const statusDiv = document.getElementById('status');
     const wordGuessed = soloWord.split('').every(letter => soloGuessedLetters.includes(letter));

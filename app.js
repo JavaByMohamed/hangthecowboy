@@ -498,11 +498,25 @@ app.get('/hangman', (req, res) => {
 
                     const setupTitle = document.getElementById('setupTitle');
                     const teamInfoSetup = document.getElementById('teamInfoSetup');
+                    const wordInput = document.getElementById('wordInput');
+                    const submitBtn = document.querySelector('#setupPhase button');
                     const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
                     const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
 
-                    setupTitle.textContent = \`\${emoji} Enter a word for the other player to guess\`;
-                    teamInfoSetup.textContent = \`\${emoji} Your role: \${roleText} - Setting the word\`;
+                    if (selectedTeam === 'creator') {
+                        // CREATOR - Show word input
+                        setupTitle.textContent = `${emoji} Enter a word for the other player to guess`;
+                        teamInfoSetup.textContent = `${emoji} Your role: ${roleText} - Setting the word`;
+                        wordInput.style.display = 'block';
+                        submitBtn.style.display = 'block';
+                    } else {
+                        // GUESSER - Show waiting message, hide input
+                        setupTitle.textContent = `🔍 Waiting for Word Creator`;
+                        teamInfoSetup.textContent = `🔍 Your role: ${roleText} - Waiting for the word creator to enter a word...`;
+                        wordInput.style.display = 'none';
+                        submitBtn.style.display = 'none';
+                    }
+                    
                     teamInfoSetup.className = selectedTeam === 'creator' ? 'team-info team-red-info' : 'team-info team-blue-info';
                 }
 
@@ -713,20 +727,28 @@ app.get('/hangman', (req, res) => {
                     const clueAlreadyShown = statusDiv.getAttribute('data-clue-shown') === 'true';
                     
                     if (wordGuessed) {
-                        statusDiv.textContent = \`🎉 Guesser Won! The word was: \${gameState.word}\`;
+                        if (selectedTeam === 'guesser') {
+                            statusDiv.textContent = `🎉 You Won! The word was: ${gameState.word}`;
+                        } else {
+                            statusDiv.textContent = `💀 You Lost! The word was: ${gameState.word}`;
+                        }
                         statusDiv.className = 'status win';
                         statusDiv.removeAttribute('data-clue-shown');
                         showGameButtons(true);
                         // Disable all buttons immediately
                         document.querySelectorAll('.letter-btn').forEach(btn => btn.disabled = true);
                     } else if (outOfLives) {
-                        statusDiv.textContent = \`💀 Word Creator Wins! The word was: \${gameState.word}\`;
+                        if (selectedTeam === 'creator') {
+                            statusDiv.textContent = `🎉 You Won! The word was: ${gameState.word}`;
+                        } else {
+                            statusDiv.textContent = `💀 You Lost! The word was: ${gameState.word}`;
+                        }
                         statusDiv.className = 'status lose';
                         statusDiv.removeAttribute('data-clue-shown');
                         showGameButtons(true);
                         // Disable all buttons immediately
                         document.querySelectorAll('.letter-btn').forEach(btn => btn.disabled = true);
-                    } else if (livesRemaining === 1 && !multiplayerClueShown && !clueAlreadyShown) {
+                    }
                         // Show clue when guessing team has only 1 life left
                         multiplayerClueShown = true;
                         generateClue(gameState.word);
@@ -884,7 +906,7 @@ io.on('connection', (socket) => {
         // If both players have joined, start the game
         if (game.players.length === 2) {
             game.state = 'word-setup';
-            game.wordTeam = game.players[0].team; // First player's team sets the word
+            game.wordTeam = 'creator'; // The 'creator' role always sets the word
             io.to(gameId).emit('game-started', { game });
         }
     });

@@ -504,17 +504,40 @@ function updateSoloGameDisplay() {
     }
 }
 
-// Play again - refresh page for fresh session
+// Play again - restart the game
 function playAgain() {
-    location.reload();
+    // Reset game variables
+    gameMode = '';
+    selectedTeam = '';
+    gameId = null;
+    playerId = null;
+    gameState = null;
+    currentPhase = 'mode-selection';
+    multiplayerClueShown = false;
+    soloClueShown = false;
+    soloWord = '';
+    soloGuessedLetters = [];
+    soloWrongGuesses = [];
+
+    // Reset UI
+    document.getElementById('gamePhase').classList.add('hidden');
+    document.getElementById('setupPhase').classList.add('hidden');
+    document.getElementById('waitingPhase').classList.add('hidden');
+    document.getElementById('teamSelectionPhase').classList.add('hidden');
+    document.getElementById('modeSelectionPhase').classList.remove('hidden');
+    
+    // Reset hangman drawing
+    document.querySelectorAll('.hangman-part').forEach(part => {
+        part.classList.add('hidden');
+    });
 }
 
-// Quit game
+// Quit game - go to homepage
 function quitGame() {
     if (gameMode === 'multiplayer') {
         socket.emit('quit-game', { gameId });
     }
-    location.reload();
+    window.location.href = '/';
 }
 
 

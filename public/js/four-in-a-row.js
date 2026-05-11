@@ -242,19 +242,33 @@ function showPlayAgainButton() {
     container.appendChild(playAgainBtn);
 }
 
-// Play again - refresh the page to start a fresh session
+// Play again - restart the game
 function playAgain() {
     if (gameMode === 'multiplayer' && gameId) {
         socket.emit('quit-game-four', { gameId });
     }
-    location.reload();
+    // Reset game variables
+    gameId = null;
+    playerId = null;
+    gameState = null;
+    selectedColor = '';
+    localBoard = Array(ROWS * COLS).fill(0);
+    
+    // Reset UI
+    document.getElementById('gamePhase').classList.add('hidden');
+    document.getElementById('waitingPhase').classList.add('hidden');
+    document.getElementById('colorSelectionPhase').classList.remove('hidden');
+    document.getElementById('gameButtons').innerHTML = '<button onclick="quitGame()" style="background: #e74c3c;">Quit Game</button>';
+    
+    // Update player count
+    updatePlayersWaiting();
 }
 
-// Quit game - refresh the page
+// Quit game - redirect to homepage
 function quitGame() {
     if (gameMode === 'multiplayer' && gameId) {
         socket.emit('quit-game-four', { gameId });
     }
-    location.reload();
+    window.location.href = '/';
 }
 

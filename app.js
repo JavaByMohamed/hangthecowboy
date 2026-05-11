@@ -100,73 +100,18 @@ app.get('/', (req, res) => {
     });
 
     const logEntry = `${timestamp} - ${ip}\n`;
-
     const logFilePath = path.join(__dirname, 'logs', 'ips.txt');
 
     // Append IP to file
     fs.appendFile(logFilePath, logEntry, (err) => {
         if (err) {
             console.error('Error writing to log file:', err);
-            return res.status(500).send('Error logging IP');
+        } else {
+            console.log('Logged:', logEntry.trim());
         }
-
-        console.log('Logged:', logEntry.trim());
     });
 
-    res.send('Anyone there 👋 Your visit has been recorded, thanks for your visit!');
-});
-
-app.get('/logs', (req, res) => {
-    const logFilePath = path.join(__dirname, 'logs', 'ips.txt');
-
-    fs.readFile(logFilePath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).send('Could not read logs.');
-        }
-
-        const entries = data.trim().split('\n').filter(Boolean).reverse();
-
-        const rows = entries.map(entry => {
-            const [timestamp, ip] = entry.split(' - ');
-            return `<tr><td>${timestamp}</td><td>${ip}</td></tr>`;
-        }).join('');
-
-        res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Visitor Logs</title>
-                <style>
-                    body { font-family: sans-serif; padding: 30px; }
-                    h1 { margin-bottom: 20px; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #ddd; padding: 10px 16px; text-align: left; }
-                    th { background: #f4f4f4; }
-                    tr:nth-child(even) { background: #fafafa; }
-                </style>
-            </head>
-            <body>
-                <h1>Visitor Logs</h1>
-                <p>${entries.length} visit(s) recorded</p>
-                <table>
-                    <thead><tr><th>Timestamp</th><th>IP Address</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            </body>
-            </html>
-        `);
-    });
-});
-
-// API endpoint for word library
-app.get('/api/word-library', (req, res) => {
-    const words = englishWords
-        .filter(word => word.length >= 5 && word.length <= 12)
-        .map(word => word.toUpperCase());
-    res.json({ words });
-});
-
-app.get('/games', (req, res) => {
+    // Serve the games menu page
     res.send(`
         <!DOCTYPE html>
         <html>
@@ -379,6 +324,284 @@ app.get('/games', (req, res) => {
                     <!-- Four in a Row Card -->
                     <a href="/four-in-a-row" class="game-card">
                         <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Four in a Row</h2>
+                            <p>Connect 4 of your pieces to win!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">👥 Two Player</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="footer">
+                    <p style="color: #999; font-size: 14px;">
+                        Made with ❤️ for gaming
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+app.get('/logs', (req, res) => {
+    const logFilePath = path.join(__dirname, 'logs', 'ips.txt');
+
+    fs.readFile(logFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Could not read logs.');
+        }
+
+        const entries = data.trim().split('\n').filter(Boolean).reverse();
+
+        const rows = entries.map(entry => {
+            const [timestamp, ip] = entry.split(' - ');
+            return `<tr><td>${timestamp}</td><td>${ip}</td></tr>`;
+        }).join('');
+
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Visitor Logs</title>
+                <style>
+                    body { font-family: sans-serif; padding: 30px; }
+                    h1 { margin-bottom: 20px; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #ddd; padding: 10px 16px; text-align: left; }
+                    th { background: #f4f4f4; }
+                    tr:nth-child(even) { background: #fafafa; }
+                </style>
+            </head>
+            <body>
+                <h1>Visitor Logs</h1>
+                <p>${entries.length} visit(s) recorded</p>
+                <table>
+                    <thead><tr><th>Timestamp</th><th>IP Address</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </body>
+            </html>
+        `);
+    });
+});
+
+// API endpoint for word library
+app.get('/api/word-library', (req, res) => {
+    const words = englishWords
+        .filter(word => word.length >= 5 && word.length <= 12)
+        .map(word => word.toUpperCase());
+    res.json({ words });
+});
+
+app.get('/games', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Game Menu</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    padding: 40px 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .container {
+                    max-width: 1000px;
+                    width: 100%;
+                    background: white;
+                    padding: 50px;
+                    border-radius: 15px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    text-align: center;
+                }
+                
+                h1 {
+                    color: #667eea;
+                    margin-bottom: 15px;
+                    font-size: 42px;
+                    font-weight: bold;
+                }
+                
+                .subtitle {
+                    color: #888;
+                    font-size: 18px;
+                    margin-bottom: 50px;
+                }
+                
+                .games-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 30px;
+                    margin: 40px 0;
+                }
+                
+                .game-card {
+                    background: white;
+                    border-radius: 15px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    text-decoration: none;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                }
+                
+                .game-card:hover {
+                    transform: scale(1.12) translateY(-10px);
+                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+                }
+                
+                .game-card-image {
+                    width: 100%;
+                    height: 200px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .game-card:nth-child(1) .game-card-image {
+                    background-image: url('/images/hangman.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 300px;
+                }
+                
+                .game-card:nth-child(1) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(2) .game-card-image {
+                    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+                }
+                
+                .game-card-icon {
+                    font-size: 100px;
+                    z-index: 1;
+                }
+                
+                .game-card-content {
+                    padding: 30px 20px;
+                    flex-grow: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+                
+                .game-card h2 {
+                    color: #333;
+                    margin: 15px 0 10px;
+                    font-size: 28px;
+                    font-weight: bold;
+                }
+                
+                .game-card p {
+                    color: #666;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    margin: 5px 0;
+                }
+                
+                .game-card .game-type {
+                    display: inline-block;
+                    background: #f0f0f0;
+                    color: #667eea;
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-top: 10px;
+                }
+                
+                .game-card:nth-child(1) .game-type {
+                    background: #fff3e0;
+                    color: #f39c12;
+                }
+                
+                .game-card:nth-child(2) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .footer {
+                    margin-top: 50px;
+                    padding-top: 30px;
+                    border-top: 1px solid #eee;
+                }
+                
+                .back-link {
+                    color: #667eea;
+                    text-decoration: none;
+                    font-size: 16px;
+                    transition: color 0.3s;
+                }
+                
+                .back-link:hover {
+                    color: #764ba2;
+                }
+                
+                @media (max-width: 600px) {
+                    .container {
+                        padding: 30px 20px;
+                    }
+                    
+                    h1 {
+                        font-size: 32px;
+                    }
+                    
+                    .game-card-icon {
+                        font-size: 70px;
+                    }
+                    
+                    .games-grid {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🎮 Game Menu</h1>
+                <p class="subtitle">Choose a game to play:</p>
+                
+                <div class="games-grid">
+                    <!-- Hangman Card -->
+                    <a href="/hangman" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Hangman</h2>
+                            <p>Guess the word before you run out of lives!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎯 Solo or Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <!-- Four in a Row Card -->
+                    <a href="/four-in-a-row" class="game-card">
+                        <div class="game-card-image">
+                            <div class="game-card-icon">🔴</div>
                         </div>
                         <div class="game-card-content">
                             <h2>Four in a Row</h2>

@@ -61,6 +61,26 @@ function createFourInARowSession() {
     return gameId;
 }
 
+// Tic Tac Toe game manager
+const ticTacToeGames = {};
+let ticTacToeGameCounter = 0;
+
+function createTicTacToeSession() {
+    ticTacToeGameCounter++;
+    const gameId = `ttt-${ticTacToeGameCounter}`;
+    ticTacToeGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting', // waiting, playing, finished
+        board: Array(9).fill(''), // 3x3 board
+        currentPlayer: 'X',
+        winner: null,
+        isDraw: false,
+        gameEnded: false
+    };
+    return gameId;
+}
+
 const logDir = path.join(__dirname, 'logs');
 const logFile = path.join(logDir, 'ips.txt');
 
@@ -159,7 +179,7 @@ app.get('/', (req, res) => {
                 
                 .games-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    grid-template-columns: repeat(2, 1fr);
                     gap: 30px;
                     margin: 40px 0;
                 }
@@ -201,6 +221,22 @@ app.get('/', (req, res) => {
                     height: 348px;
                 }
                 
+                .game-card:nth-child(2) .game-card-image {
+                    background-image: url('/images/fourinarow.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 348px;
+                }
+                                
+                .game-card:nth-child(3) .game-card-image {
+                    background-image: url('/images/tictactoe.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
                 .game-card:nth-child(1) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
@@ -209,12 +245,8 @@ app.get('/', (req, res) => {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
-                .game-card:nth-child(2) .game-card-image {
-                    background-image: url('/images/fourinarow.png');
-                    background-position: center;
-                    background-size: cover;
-                    background-repeat: no-repeat;
-                    height: 348px;
+                .game-card:nth-child(3) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
                 .game-card-icon {
@@ -263,6 +295,11 @@ app.get('/', (req, res) => {
                 .game-card:nth-child(2) .game-type {
                     background: #e3f2fd;
                     color: #3498db;
+                }
+                
+                .game-card:nth-child(3) .game-type {
+                    background: #f3e5f5;
+                    color: #7b1fa2;
                 }
                 
                 .footer {
@@ -330,6 +367,19 @@ app.get('/', (req, res) => {
                             <p>Connect 4 of your pieces to win!</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">👥 Two Player</span>
+                            </div>
+                        </div>
+                    </a>
+                  
+                    <!-- Tic Tac Toe Card -->
+                    <a href="/tic-tac-toe" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Tic Tac Toe</h2>
+                            <p>Connect 3 of your pieces to win!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🤖 Solo or Multiplayer</span>
                             </div>
                         </div>
                     </a>
@@ -478,15 +528,15 @@ app.get('/games', (req, res) => {
                     overflow: hidden;
                 }
                 
-                .game-card:nth-child(1) .game-card-image {
-                    background-image: url('/images/hangman.png');
-                    background-position: center;
-                    background-size: cover;
-                    background-repeat: no-repeat;
-                    height: 300px;
+                .game-card:nth-child(1) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
-                .game-card:nth-child(1) .game-card-content {
+                .game-card:nth-child(2) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(3) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -538,6 +588,11 @@ app.get('/games', (req, res) => {
                 }
                 
                 .game-card:nth-child(2) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(3) .game-type {
                     background: #e3f2fd;
                     color: #3498db;
                 }
@@ -630,6 +685,10 @@ app.get('/hangman', (req, res) => {
 
 app.get('/four-in-a-row', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'four-in-a-row.html'));
+});
+
+app.get('/tic-tac-toe', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'tic-tac-toe.html'));
 });
 
 // OLD HTML ROUTE REMOVED - Now serving from views/hangman.html
@@ -865,6 +924,99 @@ io.on('connection', (socket) => {
         return false;
     }
 
+    // Tic Tac Toe handlers
+    socket.on('get-waiting-count-ttt', (callback) => {
+        const waitingGames = Object.values(ticTacToeGames).filter(g => g.state === 'waiting' && g.players.length === 1);
+        callback(waitingGames.length);
+    });
+
+    socket.on('join-game-ttt', (data) => {
+        const symbol = data.symbol;
+        let gameId = null;
+        
+        // Find a game waiting for a player
+        for (const gId in ticTacToeGames) {
+            const game = ticTacToeGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1) {
+                const firstSymbol = game.players[0].symbol;
+                if (firstSymbol !== symbol) {
+                    gameId = gId;
+                    break;
+                }
+            }
+        }
+
+        // If no game found, create a new one
+        if (!gameId) {
+            gameId = createTicTacToeSession();
+        }
+
+        const game = ticTacToeGames[gameId];
+        game.players.push({ id: socket.id, symbol });
+        socket.join(gameId);
+
+        socket.emit('game-joined', { gameId, playerId: socket.id, game });
+        io.to(gameId).emit('waiting-players', game.players.length);
+
+        // If both players have joined, start the game
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            game.currentPlayer = 'X'; // X always goes first
+            io.to(gameId).emit('game-started', { game });
+        }
+    });
+
+    socket.on('make-move-ttt', (data) => {
+        const gameId = data.gameId;
+        const index = data.index;
+        const game = ticTacToeGames[gameId];
+
+        if (!game || game.gameEnded || game.board[index] !== '') return;
+
+        // Place the move
+        game.board[index] = game.currentPlayer;
+
+        // Check for winner
+        if (checkTicTacToeWinner(game.board, game.currentPlayer)) {
+            game.winner = game.currentPlayer;
+            game.gameEnded = true;
+            io.to(gameId).emit('game-ended', { game });
+        } else if (game.board.every(cell => cell !== '')) {
+            // Check for draw
+            game.isDraw = true;
+            game.gameEnded = true;
+            io.to(gameId).emit('game-ended', { game });
+        } else {
+            // Switch player
+            game.currentPlayer = game.currentPlayer === 'X' ? 'O' : 'X';
+            io.to(gameId).emit('move-made', { game });
+        }
+    });
+
+    function checkTicTacToeWinner(board, player) {
+        const winCombinations = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        return winCombinations.some(combination =>
+            combination.every(index => board[index] === player)
+        );
+    }
+
+    socket.on('quit-game-ttt', (data) => {
+        const gameId = data.gameId;
+        if (ticTacToeGames[gameId]) {
+            delete ticTacToeGames[gameId];
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);
         
@@ -887,6 +1039,18 @@ io.on('connection', (socket) => {
             
             if (game.players.length === 0) {
                 delete fourInARowGames[gameId];
+            } else {
+                io.to(gameId).emit('waiting-players', game.players.length);
+            }
+        }
+
+        // Clean up tic tac toe games
+        for (const gameId in ticTacToeGames) {
+            const game = ticTacToeGames[gameId];
+            game.players = game.players.filter(p => p.id !== socket.id);
+            
+            if (game.players.length === 0) {
+                delete ticTacToeGames[gameId];
             } else {
                 io.to(gameId).emit('waiting-players', game.players.length);
             }

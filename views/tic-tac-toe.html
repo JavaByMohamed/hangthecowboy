@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tic Tac Toe</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/tic-tac-toe.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="container">
+        <h1>❌ Tic Tac Toe ⭕</h1>
+
+        <!-- Game Mode Selection Phase -->
+        <div class="section" id="gameModePhase">
+            <h2>Phase 1: Choose Game Mode</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select how you want to play:</p>
+            <div class="mode-selection">
+                <button class="mode-btn solo-btn" onclick="selectGameMode('solo')">🤖 Solo vs AI</button>
+                <button class="mode-btn multiplayer-btn" onclick="selectGameMode('multiplayer')">👥 Multiplayer</button>
+            </div>
+        </div>
+
+        <!-- Symbol Selection Phase (for multiplayer) -->
+        <div class="section hidden" id="symbolSelectionPhase">
+            <h2>Phase 2: Choose Your Symbol</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select your symbol:</p>
+            <div class="symbol-selection">
+                <button class="symbol-btn x-btn" onclick="selectSymbol('X')">❌ X</button>
+                <button class="symbol-btn o-btn" onclick="selectSymbol('O')">⭕ O</button>
+            </div>
+            <div class="players-status" id="playersWaiting"></div>
+        </div>
+
+        <!-- Waiting Phase (for multiplayer) -->
+        <div class="section hidden" id="waitingPhase">
+            <h2 id="waitingTitle"></h2>
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+            <div class="players-status" id="playersConnected"></div>
+        </div>
+
+        <!-- Game Phase -->
+        <div class="section hidden" id="gamePhase">
+            <div class="game-info">
+                <div class="player-info" id="player1Info"></div>
+                <div class="turn-info" id="turnInfo"></div>
+                <div class="player-info" id="player2Info"></div>
+            </div>
+
+            <div class="board-container">
+                <div class="board" id="gameBoard">
+                    <div class="cell" data-index="0"></div>
+                    <div class="cell" data-index="1"></div>
+                    <div class="cell" data-index="2"></div>
+                    <div class="cell" data-index="3"></div>
+                    <div class="cell" data-index="4"></div>
+                    <div class="cell" data-index="5"></div>
+                    <div class="cell" data-index="6"></div>
+                    <div class="cell" data-index="7"></div>
+                    <div class="cell" data-index="8"></div>
+                </div>
+            </div>
+
+            <div class="game-status" id="gameStatus"></div>
+
+            <div id="gameButtons" style="text-align: center; margin-top: 20px;">
+                <button onclick="playAgain()" class="play-again-btn" id="playAgainBtn" style="display: none;">Play Again</button>
+                <button onclick="quitGame()" class="quit-btn">Quit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/tic-tac-toe.js"></script>
+</body>
+</html>
+

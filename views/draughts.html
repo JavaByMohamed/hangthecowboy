@@ -19,11 +19,11 @@
             <p class="center-text">Select how you want to play:</p>
             <div class="mode-selection">
                 <button class="mode-btn solo-btn" onclick="selectGameMode('solo')">🤖 Solo vs AI</button>
-                <button class="mode-btn multiplayer-btn" onclick="selectGameMode('multiplayer')">👥 Two Players (Local)</button>
+                <button class="mode-btn multiplayer-btn" onclick="selectGameMode('multiplayer')">👥 Multiplayer Online</button>
             </div>
         </div>
 
-        <!-- Color Selection (Solo) -->
+        <!-- Color Selection (Solo & Multiplayer) -->
         <div class="section hidden" id="colorPhase">
             <h2>Choose Your Color</h2>
             <p class="center-text">Pick your pieces:</p>
@@ -32,6 +32,12 @@
                 <button class="color-btn black-btn" onclick="selectColor('black')">⚫ Black</button>
             </div>
             <p class="center-text hint">White moves first</p>
+        </div>
+
+        <!-- Waiting Phase (Multiplayer) -->
+        <div class="section hidden" id="waitingPhase">
+            <h2 id="waitingTitle">Waiting for opponent...</h2>
+            <p class="center-text">Share this page with a friend to play together!</p>
         </div>
 
         <!-- Game Board -->

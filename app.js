@@ -45,6 +45,38 @@ function createGameSession() {
 const fourInARowGames = {};
 let fourInARowGameCounter = 0;
 
+// Draughts game manager
+const draughtsGames = {};
+let draughtsGameCounter = 0;
+
+function createDraughtsSession() {
+    draughtsGameCounter++;
+    const gameId = `dr-${draughtsGameCounter}`;
+    const board = [];
+    for (let r = 0; r < 10; r++) {
+        board[r] = [];
+        for (let c = 0; c < 10; c++) {
+            if ((r + c) % 2 === 1) {
+                if (r < 4) board[r][c] = 'b';
+                else if (r > 5) board[r][c] = 'w';
+                else board[r][c] = '';
+            } else {
+                board[r][c] = '';
+            }
+        }
+    }
+    draughtsGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting',
+        board: board,
+        currentTurn: 'white',
+        winner: null,
+        gameEnded: false
+    };
+    return gameId;
+}
+
 function createFourInARowSession() {
     fourInARowGameCounter++;
     const gameId = `four-${fourInARowGameCounter}`;
@@ -1010,6 +1042,68 @@ io.on('connection', (socket) => {
         return false;
     }
 
+    // Draughts handlers
+    socket.on('join-game-draughts', (data) => {
+        const color = data.color; // 'white' or 'black'
+        let gameId = null;
+
+        for (const gId in draughtsGames) {
+            const game = draughtsGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1) {
+                const firstColor = game.players[0].color;
+                if (firstColor !== color) {
+                    gameId = gId;
+                    break;
+                }
+            }
+        }
+
+        if (!gameId) {
+            gameId = createDraughtsSession();
+        }
+
+        const game = draughtsGames[gameId];
+        game.players.push({ id: socket.id, color });
+        socket.join(gameId);
+
+        socket.emit('draughts-joined', { gameId, playerId: socket.id, color, game });
+
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            io.to(gameId).emit('draughts-started', { game });
+        }
+    });
+
+    socket.on('draughts-move', (data) => {
+        const gameId = data.gameId;
+        const game = draughtsGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        // Verify it's this player's turn
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+
+        // Apply the move (trust client-side validation for now, board state sent from client)
+        game.board = data.board;
+        game.currentTurn = game.currentTurn === 'white' ? 'black' : 'white';
+
+        if (data.gameOver) {
+            game.gameEnded = true;
+            game.winner = data.winner;
+            io.to(gameId).emit('draughts-game-ended', { game, winner: data.winner });
+        } else {
+            io.to(gameId).emit('draughts-move-made', { game });
+        }
+    });
+
+    socket.on('quit-game-draughts', (data) => {
+        const gameId = data.gameId;
+        if (draughtsGames[gameId]) {
+            io.to(gameId).emit('draughts-opponent-quit');
+            delete draughtsGames[gameId];
+        }
+    });
+
     // Tic Tac Toe handlers
     socket.on('get-waiting-count-ttt', (callback) => {
         const waitingGames = Object.values(ticTacToeGames).filter(g => g.state === 'waiting' && g.players.length === 1);
@@ -1293,6 +1387,20 @@ io.on('connection', (socket) => {
             
             if (game.players.length === 0) {
                 delete crosswordGames[gameId];
+            }
+        }
+
+        // Clean up draughts games
+        for (const gameId in draughtsGames) {
+            const game = draughtsGames[gameId];
+            const hadPlayer = game.players.some(p => p.id === socket.id);
+            game.players = game.players.filter(p => p.id !== socket.id);
+            
+            if (game.players.length === 0) {
+                delete draughtsGames[gameId];
+            } else if (hadPlayer) {
+                io.to(gameId).emit('draughts-opponent-quit');
+                delete draughtsGames[gameId];
             }
         }
     });

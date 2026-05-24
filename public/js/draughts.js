@@ -3,13 +3,16 @@
 // Flying kings, men capture backwards, maximum capture rule
 // Pieces: 'w' = white man, 'b' = black man, 'W' = white king, 'B' = black king, '' = empty
 
+const socket = io();
+
 let gameMode = null; // 'solo' or 'multiplayer'
-let playerColor = null; // for solo mode
-let currentTurn = 'white'; // white always goes first
+let playerColor = null;
+let currentTurn = 'white';
 let board = [];
 let selectedPiece = null;
 let validMoves = [];
 let gameOver = false;
+let gameId = null;
 
 const BOARD_SIZE = 10;
 
@@ -21,8 +24,8 @@ function initBoard() {
         board[r] = [];
         for (let c = 0; c < BOARD_SIZE; c++) {
             if ((r + c) % 2 === 1) {
-                if (r < 4) board[r][c] = 'b';       // black pieces on top 4 rows
-                else if (r > 5) board[r][c] = 'w';  // white pieces on bottom 4 rows
+                if (r < 4) board[r][c] = 'b';
+                else if (r > 5) board[r][c] = 'w';
                 else board[r][c] = '';
             } else {
                 board[r][c] = '';
@@ -31,23 +34,70 @@ function initBoard() {
     }
 }
 
+// ==================== SOCKET EVENTS (MULTIPLAYER) ====================
+
+socket.on('draughts-joined', (data) => {
+    gameId = data.gameId;
+    playerColor = data.color;
+    document.getElementById('colorPhase').classList.add('hidden');
+    document.getElementById('waitingPhase').classList.remove('hidden');
+    document.getElementById('waitingTitle').textContent =
+        `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'} - Waiting for opponent...`;
+});
+
+socket.on('draughts-started', (data) => {
+    board = data.game.board;
+    currentTurn = data.game.currentTurn;
+    gameOver = false;
+    document.getElementById('waitingPhase').classList.add('hidden');
+    document.getElementById('gamePhase').classList.remove('hidden');
+    document.getElementById('gameMessage').classList.add('hidden');
+    renderBoard();
+    updateInfo();
+});
+
+socket.on('draughts-move-made', (data) => {
+    board = data.game.board;
+    currentTurn = data.game.currentTurn;
+    selectedPiece = null;
+    validMoves = [];
+    renderBoard();
+    updateInfo();
+});
+
+socket.on('draughts-game-ended', (data) => {
+    board = data.game.board;
+    gameOver = true;
+    const msgEl = document.getElementById('gameMessage');
+    msgEl.textContent = `🏆 ${data.winner} Wins!`;
+    msgEl.classList.remove('hidden');
+    renderBoard();
+});
+
+socket.on('draughts-opponent-quit', () => {
+    gameOver = true;
+    const msgEl = document.getElementById('gameMessage');
+    msgEl.textContent = '⚠️ Opponent disconnected!';
+    msgEl.classList.remove('hidden');
+});
+
 // ==================== UI HANDLERS ====================
 
 function selectGameMode(mode) {
     gameMode = mode;
     document.getElementById('gameModePhase').classList.add('hidden');
-    if (mode === 'solo') {
-        document.getElementById('colorPhase').classList.remove('hidden');
-    } else {
-        playerColor = null;
-        startGame();
-    }
+    document.getElementById('colorPhase').classList.remove('hidden');
 }
 
 function selectColor(color) {
     playerColor = color;
-    document.getElementById('colorPhase').classList.add('hidden');
-    startGame();
+    if (gameMode === 'solo') {
+        document.getElementById('colorPhase').classList.add('hidden');
+        startGame();
+    } else {
+        // Multiplayer: join via socket
+        socket.emit('join-game-draughts', { color });
+    }
 }
 
 function startGame() {
@@ -61,19 +111,27 @@ function startGame() {
     renderBoard();
     updateInfo();
 
-    // If solo and AI goes first
     if (gameMode === 'solo' && playerColor !== 'white') {
         setTimeout(aiMove, 500);
     }
 }
 
 function restartGame() {
-    startGame();
+    if (gameMode === 'multiplayer') {
+        quitGame();
+    } else {
+        startGame();
+    }
 }
 
 function quitGame() {
     gameOver = true;
+    if (gameMode === 'multiplayer' && gameId) {
+        socket.emit('quit-game-draughts', { gameId });
+        gameId = null;
+    }
     document.getElementById('gamePhase').classList.add('hidden');
+    document.getElementById('waitingPhase').classList.add('hidden');
     document.getElementById('gameModePhase').classList.remove('hidden');
 }
 
@@ -99,7 +157,6 @@ function inBounds(r, c) {
 
 // ==================== MOVE GENERATION (FMJD RULES) ====================
 
-// Directions for diagonal movement
 const ALL_DIRS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
 
 // Get all capture sequences for a piece (FMJD: men can capture backwards, kings fly)
@@ -301,8 +358,8 @@ function renderBoard() {
     const boardEl = document.getElementById('board');
     boardEl.innerHTML = '';
 
-    // Get moves for highlighting
-    const legalForSelected = selectedPiece ? getLegalMovesForPiece(selectedPiece.r, selectedPiece.c, board, currentTurn) : [];
+    const canMove = !gameOver && currentTurn === playerColor;
+    const legalForSelected = (canMove && selectedPiece) ? getLegalMovesForPiece(selectedPiece.r, selectedPiece.c, board, currentTurn) : [];
 
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
@@ -352,9 +409,7 @@ function onPieceClick(r, c) {
     if (gameOver) return;
     const color = getColor(board[r][c]);
     if (color !== currentTurn) return;
-
-    // In solo mode, only allow clicking own pieces
-    if (gameMode === 'solo' && color !== playerColor) return;
+    if (color !== playerColor) return;
 
     selectedPiece = { r, c };
     renderBoard();
@@ -365,7 +420,42 @@ function executeMove(move) {
     board = applyFullMove(board, move);
     selectedPiece = null;
     validMoves = [];
-    switchTurn();
+
+    if (gameMode === 'multiplayer') {
+        // Check game end
+        const nextTurn = currentTurn === 'white' ? 'black' : 'white';
+        const moves = getAllLegalMoves(nextTurn, board);
+        const counts = countPieces(board);
+        let isGameOver = false;
+        let winner = null;
+
+        if (moves.length === 0 || counts.white === 0 || counts.black === 0) {
+            isGameOver = true;
+            if (counts.white === 0) winner = 'Black';
+            else if (counts.black === 0) winner = 'White';
+            else winner = currentTurn === 'white' ? 'White' : 'Black';
+        }
+
+        socket.emit('draughts-move', {
+            gameId,
+            board,
+            gameOver: isGameOver,
+            winner
+        });
+
+        if (isGameOver) {
+            gameOver = true;
+            const msgEl = document.getElementById('gameMessage');
+            msgEl.textContent = `🏆 ${winner} Wins!`;
+            msgEl.classList.remove('hidden');
+        } else {
+            currentTurn = nextTurn;
+            updateInfo();
+            renderBoard();
+        }
+    } else {
+        switchTurn();
+    }
 }
 
 function switchTurn() {

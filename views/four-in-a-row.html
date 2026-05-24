@@ -12,9 +12,19 @@
     <div class="container">
         <h1>🔴 Four in a Row 🟡</h1>
 
+        <!-- Game Mode Selection Phase -->
+        <div class="section" id="gameModePhase">
+            <h2>Choose Game Mode</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select how you want to play:</p>
+            <div class="color-selection">
+                <button class="color-btn" style="background:#3498db;color:white;" onclick="selectGameMode('solo')">🤖 Solo vs AI</button>
+                <button class="color-btn" style="background:#e67e22;color:white;" onclick="selectGameMode('multiplayer')">👥 Multiplayer</button>
+            </div>
+        </div>
+
         <!-- Color Selection Phase -->
-        <div class="section" id="colorSelectionPhase">
-            <h2>Phase 1: Choose Your Color</h2>
+        <div class="section hidden" id="colorSelectionPhase">
+            <h2>Choose Your Color</h2>
             <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">Select your playing color:</p>
             <div class="color-selection">
                 <button class="color-btn color-red" onclick="selectColor('red')">🔴 Red</button>

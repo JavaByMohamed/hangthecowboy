@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: url('../images/tictactoe.png') center/cover no-repeat fixed;
     min-height: 100vh;
     padding: 20px;
 }
@@ -16,14 +16,13 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 15px 30px;
-    background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     margin-bottom: 30px;
     backdrop-filter: blur(10px);
 }
 
 .home-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgb(19, 0, 244);
     color: white;
     padding: 10px 20px;
     border-radius: 8px;

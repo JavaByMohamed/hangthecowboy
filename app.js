@@ -235,6 +235,13 @@ app.get('/', (req, res) => {
                     background-size: cover;
                     background-repeat: no-repeat;
                     height: 435px;
+                }             
+                .game-card:nth-child(4) .game-card-image {
+                    background-image: url('/images/draughts.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
                 }
                 
                 .game-card:nth-child(1) .game-card-content {
@@ -246,6 +253,10 @@ app.get('/', (req, res) => {
                 }
                 
                 .game-card:nth-child(3) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(4) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -341,7 +352,7 @@ app.get('/', (req, res) => {
         </head>
         <body>
             <div class="container">
-                <h1>🎮 Game Menu</h1>
+                <h1>🎮 Game Menu 🎮</h1>
                 <p class="subtitle">Choose a game to play:</p>
                 
                 <div class="games-grid">
@@ -366,7 +377,7 @@ app.get('/', (req, res) => {
                             <h2>Four in a Row</h2>
                             <p>Connect 4 of your pieces to win!</p>
                             <div style="margin-top: auto;">
-                                <span class="game-type">👥 Two Player</span>
+                                <span class="game-type">🤖 Solo or Multiplayer</span>
                             </div>
                         </div>
                     </a>
@@ -380,6 +391,19 @@ app.get('/', (req, res) => {
                             <p>Connect 3 of your pieces to win!</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">🤖 Solo or Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Draughts Card -->
+                    <a href="/draughts" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Draughts</h2>
+                            <p>Classic checkers — capture all opponent pieces!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🤖 Solo or Two Players</span>
                             </div>
                         </div>
                     </a>
@@ -689,6 +713,10 @@ app.get('/four-in-a-row', (req, res) => {
 
 app.get('/tic-tac-toe', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tic-tac-toe.html'));
+});
+
+app.get('/draughts', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'draughts.html'));
 });
 
 // OLD HTML ROUTE REMOVED - Now serving from views/hangman.html

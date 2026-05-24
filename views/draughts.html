@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Draughts (Checkers)</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/draughts.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="container">
+        <h1>⚫️ Draughts ⚪️️</h1>
+
+        <!-- Game Mode Selection -->
+        <div class="section" id="gameModePhase">
+            <h2>Choose Game Mode</h2>
+            <p class="center-text">Select how you want to play:</p>
+            <div class="mode-selection">
+                <button class="mode-btn solo-btn" onclick="selectGameMode('solo')">🤖 Solo vs AI</button>
+                <button class="mode-btn multiplayer-btn" onclick="selectGameMode('multiplayer')">👥 Two Players (Local)</button>
+            </div>
+        </div>
+
+        <!-- Color Selection (Solo) -->
+        <div class="section hidden" id="colorPhase">
+            <h2>Choose Your Color</h2>
+            <p class="center-text">Pick your pieces:</p>
+            <div class="color-selection">
+                <button class="color-btn white-btn" onclick="selectColor('white')">⚪ White</button>
+                <button class="color-btn black-btn" onclick="selectColor('black')">⚫ Black</button>
+            </div>
+            <p class="center-text hint">White moves first</p>
+        </div>
+
+        <!-- Game Board -->
+        <div class="section hidden" id="gamePhase">
+            <div class="game-info">
+                <span id="turnIndicator" class="turn-indicator">White's Turn</span>
+                <div class="score-board">
+                    <span class="score red-score">⚪ White: <span id="redCount">20</span></span>
+                    <span class="score black-score">⚫ Black: <span id="blackCount">20</span></span>
+                </div>
+            </div>
+            <div id="board" class="board"></div>
+            <div id="gameMessage" class="game-message hidden"></div>
+            <button class="restart-btn" onclick="restartGame()">🔄 Restart</button>
+            <button class="quit-btn" onclick="quitGame()">🚪 Quit</button>
+        </div>
+    </div>
+
+    <script src="/js/draughts.js"></script>
+</body>
+</html>

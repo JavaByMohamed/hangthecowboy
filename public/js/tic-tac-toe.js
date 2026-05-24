@@ -55,7 +55,11 @@ socket.on('waiting-players', (count) => {
     updatePlayersWaiting();
 });
 
-// Functions
+socket.on('opponent-disconnected', () => {
+    gameEnded = true;
+    const statusEl = document.getElementById('statusDisplay');
+    if (statusEl) statusEl.textContent = '⚠️ Opponent disconnected!';
+});
 function selectGameMode(mode) {
     gameMode = mode;
     document.getElementById('gameModePhase').classList.add('hidden');

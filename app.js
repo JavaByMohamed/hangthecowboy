@@ -8,7 +8,10 @@ const englishWords = require('an-array-of-english-words');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    pingTimeout: 120000,    // 2 minutes before considering disconnected
+    pingInterval: 120000     // ping every 30 seconds
+});
 
 const PORT = process.env.PORT || 5000;
 
@@ -1099,7 +1102,8 @@ io.on('connection', (socket) => {
     socket.on('quit-game-draughts', (data) => {
         const gameId = data.gameId;
         if (draughtsGames[gameId]) {
-            io.to(gameId).emit('draughts-opponent-quit');
+            socket.to(gameId).emit('draughts-opponent-quit');
+            socket.leave(gameId);
             delete draughtsGames[gameId];
         }
     });
@@ -1347,10 +1351,13 @@ io.on('connection', (socket) => {
         // Clean up hangman games
         for (const gameId in games) {
             const game = games[gameId];
+            const hadPlayer = game.players.some(p => p.id === socket.id);
             game.players = game.players.filter(p => p.id !== socket.id);
             
             if (game.players.length === 0) {
                 delete games[gameId];
+            } else if (hadPlayer && game.state === 'playing') {
+                io.to(gameId).emit('opponent-disconnected');
             } else {
                 io.to(gameId).emit('waiting-players', game.players.length);
             }
@@ -1359,9 +1366,13 @@ io.on('connection', (socket) => {
         // Clean up four in a row games
         for (const gameId in fourInARowGames) {
             const game = fourInARowGames[gameId];
+            const hadPlayer = game.players.some(p => p.id === socket.id);
             game.players = game.players.filter(p => p.id !== socket.id);
             
             if (game.players.length === 0) {
+                delete fourInARowGames[gameId];
+            } else if (hadPlayer && game.state === 'playing') {
+                io.to(gameId).emit('opponent-disconnected');
                 delete fourInARowGames[gameId];
             } else {
                 io.to(gameId).emit('waiting-players', game.players.length);
@@ -1371,9 +1382,13 @@ io.on('connection', (socket) => {
         // Clean up tic tac toe games
         for (const gameId in ticTacToeGames) {
             const game = ticTacToeGames[gameId];
+            const hadPlayer = game.players.some(p => p.id === socket.id);
             game.players = game.players.filter(p => p.id !== socket.id);
             
             if (game.players.length === 0) {
+                delete ticTacToeGames[gameId];
+            } else if (hadPlayer && game.state === 'playing') {
+                io.to(gameId).emit('opponent-disconnected');
                 delete ticTacToeGames[gameId];
             } else {
                 io.to(gameId).emit('waiting-players', game.players.length);

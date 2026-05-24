@@ -74,6 +74,12 @@ socket.on('invalid-move', () => {
     alert('Invalid move! That column is full.');
 });
 
+socket.on('opponent-disconnected', () => {
+    soloGameOver = true;
+    const statusEl = document.getElementById('statusDisplay');
+    if (statusEl) statusEl.textContent = '⚠️ Opponent disconnected!';
+});
+
 function updatePlayersWaiting() {
     socket.emit('get-waiting-count-four', (count) => {
         document.getElementById('playersWaiting').textContent = 

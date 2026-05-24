@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     pingTimeout: 3000000,    // 50 minutes before considering disconnected
-    pingInterval: 10000      // ping every 10 seconds to keep connection alive
+    pingInterval: 1000      // ping every 10 seconds to keep connection alive
 });
 
 const PORT = process.env.PORT || 5000;

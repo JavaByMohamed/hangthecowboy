@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Crossword Puzzle - Word Building Game</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/crossword.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="container">
+        <h1>🧩 Crossword Puzzle 🧩</h1>
+
+        <!-- Game Mode Selection -->
+        <div class="section" id="gameModePhase">
+            <h2>Word Building Game</h2>
+            <p style="text-align: center; font-size: 16px; margin-bottom: 20px;">
+                Take turns placing words on the board. Connect to existing letters to score points!
+            </p>
+            <div class="color-selection">
+                <button class="color-btn" style="background:#2ecc71;color:white;" onclick="selectMode('solo')">🤖 Play vs AI</button>
+                <button class="color-btn" style="background:#3498db;color:white;" onclick="selectMode('multiplayer')">👥 Play Online</button>
+            </div>
+            <div class="hidden" id="difficultySelect" style="margin-top:20px;">
+                <p style="margin-bottom:10px; font-weight:bold;">Select AI Difficulty:</p>
+                <div class="color-selection">
+                    <button class="color-btn" style="background:#55efc4;color:#222;" onclick="startSolo('easy')">Easy</button>
+                    <button class="color-btn" style="background:#ffeaa7;color:#222;" onclick="startSolo('medium')">Medium</button>
+                    <button class="color-btn" style="background:#fab1a0;color:#222;" onclick="startSolo('hard')">Hard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Phase -->
+        <div class="section hidden" id="waitingPhase">
+            <h2>Waiting for opponent...</h2>
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+        </div>
+
+        <!-- Game Phase -->
+        <div class="section hidden" id="gamePhase">
+            <div class="game-info">
+                <div class="player-info" id="player1Info">Player 1: 0 pts</div>
+                <div class="turn-info" id="turnInfo">Your turn!</div>
+                <div class="player-info" id="player2Info">Player 2: 0 pts</div>
+            </div>
+
+            <div class="word-input-area">
+                <input type="text" id="wordInput" placeholder="Type a word..." maxlength="15" autocomplete="off">
+                <select id="directionSelect">
+                    <option value="horizontal">→ Horizontal</option>
+                    <option value="vertical">↓ Vertical</option>
+                </select>
+                <button id="placeBtn" onclick="placeWord()">Place Word</button>
+                <button id="skipBtn" onclick="skipTurn()">Skip Turn</button>
+            </div>
+            <p class="hint-text" id="hintText">Click a cell on the board to set the starting position, then type your word.</p>
+
+            <div class="board-container">
+                <div class="board" id="gameBoard"></div>
+            </div>
+
+            <div class="game-status" id="gameStatus"></div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="quitGame()" style="background: #e74c3c; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:16px;">Quit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/crossword.js"></script>
+</body>
+</html>
+

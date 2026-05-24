@@ -81,6 +81,30 @@ function createTicTacToeSession() {
     return gameId;
 }
 
+// Crossword Puzzle game manager
+const crosswordGames = {};
+let crosswordGameCounter = 0;
+const CROSSWORD_SIZE = 15;
+const MAX_SKIPS = 2; // game ends after both players skip consecutively
+
+function createCrosswordSession() {
+    crosswordGameCounter++;
+    const gameId = `cw-${crosswordGameCounter}`;
+    crosswordGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting',
+        board: Array(CROSSWORD_SIZE * CROSSWORD_SIZE).fill(''),
+        cellOwners: Array(CROSSWORD_SIZE * CROSSWORD_SIZE).fill(0),
+        currentTurn: 1, // player 1 goes first
+        scores: [0, 0],
+        isFirstMove: true,
+        consecutiveSkips: 0,
+        winner: null
+    };
+    return gameId;
+}
+
 const logDir = path.join(__dirname, 'logs');
 const logFile = path.join(logDir, 'ips.txt');
 
@@ -236,8 +260,17 @@ app.get('/', (req, res) => {
                     background-repeat: no-repeat;
                     height: 435px;
                 }             
+                
                 .game-card:nth-child(4) .game-card-image {
                     background-image: url('/images/draughts.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                             
+                .game-card:nth-child(5) .game-card-image {
+                    background-image: url('/images/crossword.png');
                     background-position: center;
                     background-size: cover;
                     background-repeat: no-repeat;
@@ -257,6 +290,10 @@ app.get('/', (req, res) => {
                 }
                 
                 .game-card:nth-child(4) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(5) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -404,6 +441,19 @@ app.get('/', (req, res) => {
                             <p>Classic checkers — capture all opponent pieces!</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">🤖 Solo or Two Players</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Crossword Puzzle Card -->
+                    <a href="/crossword" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Crossword Puzzle</h2>
+                            <p>Build words together by connecting letters on the board!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🤖 Solo or Multiplayer</span>
                             </div>
                         </div>
                     </a>
@@ -564,8 +614,12 @@ app.get('/games', (req, res) => {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
-                .game-card:nth-child(2) .game-card-image {
-                    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+                .game-card:nth-child(4) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(5) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
                 .game-card-icon {
@@ -660,7 +714,7 @@ app.get('/games', (req, res) => {
         </head>
         <body>
             <div class="container">
-                <h1>🎮 Game Menu</h1>
+                <h1>🎮 Game Menu 🎮</h1>
                 <p class="subtitle">Choose a game to play:</p>
                 
                 <div class="games-grid">
@@ -717,6 +771,10 @@ app.get('/tic-tac-toe', (req, res) => {
 
 app.get('/draughts', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'draughts.html'));
+});
+
+app.get('/crossword', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'crossword.html'));
 });
 
 // OLD HTML ROUTE REMOVED - Now serving from views/hangman.html
@@ -1045,6 +1103,150 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Crossword Puzzle handlers
+    socket.on('join-game-crossword', () => {
+        let gameId = null;
+        for (const gId in crosswordGames) {
+            const game = crosswordGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1) {
+                gameId = gId;
+                break;
+            }
+        }
+        if (!gameId) {
+            gameId = createCrosswordSession();
+        }
+        const game = crosswordGames[gameId];
+        game.players.push({ id: socket.id });
+        socket.join(gameId);
+        socket.emit('game-joined-crossword', { gameId, playerId: socket.id });
+
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            io.to(gameId).emit('game-started-crossword', { game });
+        }
+    });
+
+    socket.on('place-word-crossword', (data) => {
+        const { gameId, word, startIndex, direction } = data;
+        const game = crosswordGames[gameId];
+        if (!game || game.state !== 'playing') return;
+
+        const pIdx = game.players.findIndex(p => p.id === socket.id);
+        const playerNum = pIdx + 1;
+        if (game.currentTurn !== playerNum) return;
+
+        const row = Math.floor(startIndex / CROSSWORD_SIZE);
+        const col = startIndex % CROSSWORD_SIZE;
+
+        // Validate placement fits on board
+        for (let i = 0; i < word.length; i++) {
+            const r = direction === 'vertical' ? row + i : row;
+            const c = direction === 'horizontal' ? col + i : col;
+            if (r >= CROSSWORD_SIZE || c >= CROSSWORD_SIZE) {
+                socket.emit('invalid-word-crossword', { message: 'Word goes off the board!' });
+                return;
+            }
+            const idx = r * CROSSWORD_SIZE + c;
+            // If cell is occupied, must match the letter
+            if (game.board[idx] && game.board[idx] !== word[i]) {
+                socket.emit('invalid-word-crossword', { message: 'Conflicts with existing letter on board!' });
+                return;
+            }
+        }
+
+        // Must connect to existing letters (unless first move)
+        if (!game.isFirstMove) {
+            let connects = false;
+            for (let i = 0; i < word.length; i++) {
+                const r = direction === 'vertical' ? row + i : row;
+                const c = direction === 'horizontal' ? col + i : col;
+                const idx = r * CROSSWORD_SIZE + c;
+                if (game.board[idx] === word[i]) {
+                    connects = true;
+                    break;
+                }
+                // Check adjacent cells
+                const neighbors = [
+                    (r > 0) ? (r-1)*CROSSWORD_SIZE+c : -1,
+                    (r < CROSSWORD_SIZE-1) ? (r+1)*CROSSWORD_SIZE+c : -1,
+                    (c > 0) ? r*CROSSWORD_SIZE+(c-1) : -1,
+                    (c < CROSSWORD_SIZE-1) ? r*CROSSWORD_SIZE+(c+1) : -1
+                ];
+                for (const n of neighbors) {
+                    if (n >= 0 && game.board[n]) {
+                        connects = true;
+                        break;
+                    }
+                }
+                if (connects) break;
+            }
+            if (!connects) {
+                socket.emit('invalid-word-crossword', { message: 'Word must connect to existing letters on the board!' });
+                return;
+            }
+        }
+
+        // Validate it's a real English word
+        if (!englishWords.includes(word.toLowerCase())) {
+            socket.emit('invalid-word-crossword', { message: `"${word}" is not a valid English word!` });
+            return;
+        }
+
+        // Place the word
+        let newLetters = 0;
+        for (let i = 0; i < word.length; i++) {
+            const r = direction === 'vertical' ? row + i : row;
+            const c = direction === 'horizontal' ? col + i : col;
+            const idx = r * CROSSWORD_SIZE + c;
+            if (!game.board[idx]) {
+                game.board[idx] = word[i];
+                game.cellOwners[idx] = playerNum;
+                newLetters++;
+            }
+        }
+
+        // Score: 1 point per new letter placed
+        game.scores[pIdx] += newLetters;
+        game.isFirstMove = false;
+        game.consecutiveSkips = 0;
+
+        // Switch turn
+        game.currentTurn = game.currentTurn === 1 ? 2 : 1;
+        io.to(gameId).emit('game-updated-crossword', { game });
+    });
+
+    socket.on('skip-turn-crossword', (data) => {
+        const { gameId } = data;
+        const game = crosswordGames[gameId];
+        if (!game || game.state !== 'playing') return;
+
+        const pIdx = game.players.findIndex(p => p.id === socket.id);
+        const playerNum = pIdx + 1;
+        if (game.currentTurn !== playerNum) return;
+
+        game.consecutiveSkips++;
+        game.currentTurn = game.currentTurn === 1 ? 2 : 1;
+
+        if (game.consecutiveSkips >= 2) {
+            // Both players skipped - game over
+            game.state = 'finished';
+            if (game.scores[0] > game.scores[1]) game.winner = 1;
+            else if (game.scores[1] > game.scores[0]) game.winner = 2;
+            else game.winner = 0; // draw
+            io.to(gameId).emit('game-over-crossword', { game });
+        } else {
+            io.to(gameId).emit('game-updated-crossword', { game });
+        }
+    });
+
+    socket.on('quit-game-crossword', (data) => {
+        const gameId = data.gameId;
+        if (crosswordGames[gameId]) {
+            delete crosswordGames[gameId];
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);
         
@@ -1081,6 +1283,16 @@ io.on('connection', (socket) => {
                 delete ticTacToeGames[gameId];
             } else {
                 io.to(gameId).emit('waiting-players', game.players.length);
+            }
+        }
+
+        // Clean up crossword games
+        for (const gameId in crosswordGames) {
+            const game = crosswordGames[gameId];
+            game.players = game.players.filter(p => p.id !== socket.id);
+            
+            if (game.players.length === 0) {
+                delete crosswordGames[gameId];
             }
         }
     });

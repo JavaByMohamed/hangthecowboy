@@ -9,8 +9,8 @@ const englishWords = require('an-array-of-english-words');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-    pingTimeout: 120000,    // 2 minutes before considering disconnected
-    pingInterval: 120000     // ping every 30 seconds
+    pingTimeout: 3000000,    // 50 minutes before considering disconnected
+    pingInterval: 3000000    // ping every 50 minutes
 });
 
 const PORT = process.env.PORT || 5000;

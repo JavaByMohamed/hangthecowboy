@@ -46,10 +46,12 @@
         <!-- Game Phase -->
         <div class="section hidden" id="gamePhase">
             <div class="game-info">
-                <div class="player-info" id="player1Info"></div>
-                <div class="turn-info" id="turnInfo"></div>
-                <div class="player-info" id="player2Info"></div>
+                <span id="turnIndicator" class="turn-indicator">Your Turn</span>
                 <div class="timer-display" id="timerDisplay" style="text-align:center;font-size:20px;font-weight:bold;color:#e74c3c;margin:5px 0;">⏱️ 30s</div>
+                <div class="score-board">
+                    <span class="score" id="player1Info">🔴 Red</span>
+                    <span class="score" id="player2Info">🟡 Yellow</span>
+                </div>
             </div>
 
             <div class="board-container">

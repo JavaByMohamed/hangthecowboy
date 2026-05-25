@@ -494,9 +494,22 @@ function updateGameDisplay() {
     // Update hangman drawing
     updateHangmanDrawing(gameState.wrongGuesses.length);
 
-    const statusDiv = document.getElementById('status');
+    // Update turn indicator
+    const indicator = document.getElementById('turnIndicator');
     const wordGuessed = gameState.word.split('').every(letter => gameState.guessedLetters.includes(letter));
     const outOfLives = gameState.wrongGuesses.length >= gameState.maxLives;
+    if (wordGuessed || outOfLives) {
+        indicator.textContent = 'Game Over';
+        indicator.className = 'turn-indicator';
+    } else if (selectedTeam === 'guesser') {
+        indicator.textContent = 'Your Turn - Guess!';
+        indicator.className = 'turn-indicator';
+    } else {
+        indicator.textContent = 'Waiting for Guesser...';
+        indicator.className = 'turn-indicator waiting-turn';
+    }
+
+    const statusDiv = document.getElementById('status');
     const livesRemaining = gameState.maxLives - gameState.wrongGuesses.length;
     
     // Don't overwrite if clue is already showing
@@ -549,9 +562,19 @@ function updateSoloGameDisplay() {
     // Update hangman drawing
     updateHangmanDrawing(soloWrongGuesses.length);
 
-    const statusDiv = document.getElementById('status');
+    // Update turn indicator
+    const indicator = document.getElementById('turnIndicator');
     const wordGuessed = soloWord.split('').every(letter => soloGuessedLetters.includes(letter));
     const outOfLives = soloWrongGuesses.length >= SOLO_MAX_LIVES;
+    if (wordGuessed || outOfLives) {
+        indicator.textContent = 'Game Over';
+        indicator.className = 'turn-indicator';
+    } else {
+        indicator.textContent = 'Your Turn';
+        indicator.className = 'turn-indicator';
+    }
+
+    const statusDiv = document.getElementById('status');
     const livesRemaining = SOLO_MAX_LIVES - soloWrongGuesses.length;
     
     // Don't overwrite if clue is already showing

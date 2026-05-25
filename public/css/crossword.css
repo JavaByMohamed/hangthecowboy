@@ -122,20 +122,31 @@ h2 {
     gap: 10px;
 }
 
-.player-info {
-    background: #ecf0f1;
-    padding: 10px 20px;
-    border-radius: 8px;
+.turn-indicator {
+    font-size: 20px;
     font-weight: bold;
-    font-size: 14px;
+    padding: 8px 20px;
+    border-radius: 25px;
+    background: #f5f5f5;
+    color: #333;
+    border: 2px solid #ccc;
 }
 
-.turn-info {
-    background: #2ecc71;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
+.turn-indicator.opponent-turn {
+    background: #00ffb7;
+}
+
+.score-board {
+    display: flex;
+    gap: 15px;
+}
+
+.score {
+    font-size: 16px;
     font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #f5f5f5;
 }
 
 .word-input-area {

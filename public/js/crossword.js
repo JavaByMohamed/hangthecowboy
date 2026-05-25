@@ -303,7 +303,9 @@ function endSoloGame() {
 function updateSoloUI() {
     document.getElementById('player1Info').textContent = `You: ${soloGame.scores[0]} pts`;
     document.getElementById('player2Info').textContent = `AI: ${soloGame.scores[1]} pts`;
-    document.getElementById('turnInfo').textContent = soloGame.currentTurn === 1 ? 'Your turn!' : 'AI thinking...';
+    const indicator = document.getElementById('turnIndicator');
+    indicator.textContent = soloGame.currentTurn === 1 ? 'Your turn!' : 'AI thinking...';
+    indicator.className = 'turn-indicator' + (soloGame.currentTurn === 2 ? ' opponent-turn' : '');
     renderBoard(soloGame.board, soloGame.cellOwners);
 }
 
@@ -363,7 +365,9 @@ function updateMultiplayerUI(game) {
     const isMyTurn = game.currentTurn === playerNum;
     document.getElementById('player1Info').textContent = `P1: ${game.scores[0]} pts${playerNum===1?' (You)':''}`;
     document.getElementById('player2Info').textContent = `P2: ${game.scores[1]} pts${playerNum===2?' (You)':''}`;
-    document.getElementById('turnInfo').textContent = isMyTurn ? 'Your turn!' : "Opponent's turn...";
+    const indicator = document.getElementById('turnIndicator');
+    indicator.textContent = isMyTurn ? 'Your turn!' : "Opponent's turn...";
+    indicator.className = 'turn-indicator' + (!isMyTurn ? ' opponent-turn' : '');
     renderBoard(game.board, game.cellOwners);
 }
 

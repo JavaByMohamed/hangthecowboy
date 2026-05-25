@@ -332,10 +332,10 @@ function updateGameDisplay() {
         }
     });
     
-    // Update player info
+    // Update turn indicator and player info
     const player1Info = document.getElementById('player1Info');
     const player2Info = document.getElementById('player2Info');
-    const turnInfo = document.getElementById('turnInfo');
+    const indicator = document.getElementById('turnIndicator');
     const statusDiv = document.getElementById('gameStatus');
     
     if (gameMode === 'solo') {
@@ -343,24 +343,27 @@ function updateGameDisplay() {
         player2Info.textContent = '🤖 AI (O)';
         
         if (gameEnded) {
-            // Determine winner
             if (checkWinner(soloBoard, 'X')) {
                 statusDiv.textContent = '🎉 You Won! The AI loses!';
                 statusDiv.className = 'game-status win';
-                turnInfo.textContent = 'Game Over';
+                indicator.textContent = 'Game Over';
             } else if (checkWinner(soloBoard, 'O')) {
                 statusDiv.textContent = '💀 AI Won! Better luck next time!';
                 statusDiv.className = 'game-status lose';
-                turnInfo.textContent = 'Game Over';
+                indicator.textContent = 'Game Over';
             } else {
                 statusDiv.textContent = "🤝 It's a Draw!";
                 statusDiv.className = 'game-status draw';
-                turnInfo.textContent = 'Game Over';
+                indicator.textContent = 'Game Over';
             }
+            indicator.className = 'turn-indicator';
+            player1Info.classList.remove('active');
+            player2Info.classList.remove('active');
         } else {
             statusDiv.textContent = soloCurrentPlayer === 'X' ? '🎮 Your Turn!' : '🤖 AI is thinking...';
             statusDiv.className = 'game-status playing';
-            turnInfo.textContent = soloCurrentPlayer === 'X' ? 'Your Turn' : "AI's Turn";
+            indicator.textContent = soloCurrentPlayer === 'X' ? "Your Turn" : "AI's Turn";
+            indicator.className = 'turn-indicator' + (soloCurrentPlayer === 'O' ? ' opponent-turn' : '');
             if (soloCurrentPlayer === 'X') {
                 player1Info.classList.add('active');
                 player2Info.classList.remove('active');
@@ -381,28 +384,31 @@ function updateGameDisplay() {
             if (checkWinner(gameState.board, playerSymbol)) {
                 statusDiv.textContent = '🎉 You Won!';
                 statusDiv.className = 'game-status win';
-                turnInfo.textContent = 'Game Over';
             } else if (checkWinner(gameState.board, opponentSymbol)) {
                 statusDiv.textContent = '💀 You Lost!';
                 statusDiv.className = 'game-status lose';
-                turnInfo.textContent = 'Game Over';
             } else {
                 statusDiv.textContent = "🤝 It's a Draw!";
                 statusDiv.className = 'game-status draw';
-                turnInfo.textContent = 'Game Over';
             }
+            indicator.textContent = 'Game Over';
+            indicator.className = 'turn-indicator';
+            player1Info.classList.remove('active');
+            player2Info.classList.remove('active');
         } else {
             const isYourTurn = currentPlayer === playerSymbol;
             if (isYourTurn) {
                 statusDiv.textContent = '🎮 Your Turn!';
                 statusDiv.className = 'game-status playing';
-                turnInfo.textContent = 'Your Turn';
+                indicator.textContent = 'Your Turn';
+                indicator.className = 'turn-indicator';
                 player1Info.classList.add('active');
                 player2Info.classList.remove('active');
             } else {
                 statusDiv.textContent = "⏳ Opponent's Turn";
                 statusDiv.className = 'game-status playing';
-                turnInfo.textContent = "Opponent's Turn";
+                indicator.textContent = "Opponent's Turn";
+                indicator.className = 'turn-indicator opponent-turn';
                 player1Info.classList.remove('active');
                 player2Info.classList.add('active');
             }

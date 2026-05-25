@@ -531,7 +531,7 @@ function switchTurn() {
 
 function updateInfo() {
     const counts = countPieces(board);
-    document.getElementById('redCount').textContent = counts.white;
+    document.getElementById('whiteCount').textContent = counts.white;
     document.getElementById('blackCount').textContent = counts.black;
     const indicator = document.getElementById('turnIndicator');
     indicator.textContent = currentTurn === 'white' ? "White's Turn" : "Black's Turn";

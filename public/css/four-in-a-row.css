@@ -158,33 +158,43 @@ button:hover {
 /* Game Info */
 .game-info {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f5f5f5;
-    border-radius: 5px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.player-info {
+.turn-indicator {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 20px;
+    border-radius: 25px;
+    background: #f5f5f5;
+    color: #333;
+    border: 2px solid #ccc;
+}
+
+.turn-indicator.opponent-turn {
+    background: #00ffb7;
+}
+
+.score-board {
+    display: flex;
+    gap: 15px;
+}
+
+.score {
     font-size: 16px;
     font-weight: bold;
-    flex: 1;
-    text-align: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #f5f5f5;
 }
 
-.player-info.active {
+.score.active {
     background: #fff3cd;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-.turn-info {
-    font-size: 18px;
-    font-weight: bold;
-    color: #667eea;
-    flex: 1;
-    text-align: center;
+    border: 2px solid #f39c12;
 }
 
 /* Board */

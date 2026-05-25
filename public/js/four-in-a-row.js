@@ -158,7 +158,7 @@ function updateSoloDisplay() {
 
     const player1Info = document.getElementById('player1Info');
     const player2Info = document.getElementById('player2Info');
-    const turnInfo = document.getElementById('turnInfo');
+    const indicator = document.getElementById('turnIndicator');
 
     const playerEmoji = selectedColor === 'red' ? '🔴' : '🟡';
     const aiEmoji = aiColor === 'red' ? '🔴' : '🟡';
@@ -171,10 +171,12 @@ function updateSoloDisplay() {
 
     if (soloCurrentTurn === selectedColor) {
         player1Info.classList.add('active');
-        turnInfo.textContent = `${playerEmoji} Your Turn`;
+        indicator.textContent = `${playerEmoji} Your Turn`;
+        indicator.className = 'turn-indicator';
     } else {
         player2Info.classList.add('active');
-        turnInfo.textContent = `${aiEmoji} AI Thinking...`;
+        indicator.textContent = `${aiEmoji} AI Thinking...`;
+        indicator.className = 'turn-indicator opponent-turn';
     }
 
     if (!soloGameOver) {
@@ -466,7 +468,7 @@ function updateGameDisplay() {
     const player2Color = gameState.players[1]?.color || 'yellow';
     const player1Info = document.getElementById('player1Info');
     const player2Info = document.getElementById('player2Info');
-    const turnInfo = document.getElementById('turnInfo');
+    const indicator = document.getElementById('turnIndicator');
     
     const emoji1 = player1Color === 'red' ? '🔴' : '🟡';
     const emoji2 = player2Color === 'red' ? '🔴' : '🟡';
@@ -477,13 +479,14 @@ function updateGameDisplay() {
     player1Info.classList.remove('active');
     player2Info.classList.remove('active');
     
+    const isYourTurn = gameState.currentTurn === selectedColor;
     if (gameState.currentTurn === player1Color) {
         player1Info.classList.add('active');
-        turnInfo.textContent = `${emoji1} Turn`;
     } else {
         player2Info.classList.add('active');
-        turnInfo.textContent = `${emoji2} Turn`;
     }
+    indicator.textContent = isYourTurn ? "Your Turn" : "Opponent's Turn";
+    indicator.className = 'turn-indicator' + (!isYourTurn ? ' opponent-turn' : '');
     
     if (!gameState.gameEnded) {
         document.getElementById('gameStatus').textContent = '🎮 Game in Progress';

@@ -1,6 +1,19 @@
 // Variables
 let wordLibrary = [];
-const socket = io({ pingTimeout: 60000, pingInterval: 25000 });
+const socket = io({
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000
+});
+
+socket.on('connect', () => console.log('Connected:', socket.id, 'transport:', socket.io.engine.transport.name));
+socket.on('disconnect', (reason) => console.log('Disconnected:', reason));
+socket.on('connect_error', (err) => console.log('Connection error:', err.message));
+socket.io.engine && socket.io.engine.on('upgrade', (transport) => console.log('Upgraded to:', transport.name));
+
 let gameMode = ''; // 'solo' or 'multiplayer'
 let selectedTeam = '';
 let gameId = null;

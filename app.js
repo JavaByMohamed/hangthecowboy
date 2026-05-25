@@ -10,7 +10,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     pingTimeout: 60000,      // 60 seconds before considering disconnected
-    pingInterval: 25000      // ping every 25 seconds to keep connection alive
+    pingInterval: 25000,     // ping every 25 seconds to keep connection alive
+    transports: ['websocket', 'polling'],
+    cors: { origin: '*' }
 });
 
 const PORT = process.env.PORT || 5000;

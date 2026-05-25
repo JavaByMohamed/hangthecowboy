@@ -1,6 +1,6 @@
 // Variables
 let wordLibrary = [];
-const socket = io({ pingTimeout: 3000000, pingInterval: 10000 });
+const socket = io({ pingTimeout: 60000, pingInterval: 25000 });
 let gameMode = ''; // 'solo' or 'multiplayer'
 let selectedTeam = '';
 let gameId = null;

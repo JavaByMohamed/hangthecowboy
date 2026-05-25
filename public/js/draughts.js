@@ -3,7 +3,7 @@
 // Flying kings, men capture backwards, maximum capture rule
 // Pieces: 'w' = white man, 'b' = black man, 'W' = white king, 'B' = black king, '' = empty
 
-const socket = io({ pingTimeout: 3000000, pingInterval: 10000 });
+const socket = io({ pingTimeout: 60000, pingInterval: 25000 });
 
 let gameMode = null; // 'solo' or 'multiplayer'
 let playerColor = null;

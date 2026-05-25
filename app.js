@@ -9,8 +9,8 @@ const englishWords = require('an-array-of-english-words');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-    pingTimeout: 3000000,    // 50 minutes before considering disconnected
-    pingInterval: 10000      // ping every 10 seconds to keep connection alive
+    pingTimeout: 60000,      // 60 seconds before considering disconnected
+    pingInterval: 25000      // ping every 25 seconds to keep connection alive
 });
 
 const PORT = process.env.PORT || 5000;
@@ -814,6 +814,14 @@ app.get('/crossword', (req, res) => {
 
 // OLD HTML ROUTE REMOVED - Now serving from views/hangman.html
 
+// Catch silent crashes
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+});
+
 // Socket.IO event handlers
 io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
@@ -1345,8 +1353,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
-        console.log('Player disconnected:', socket.id);
+    socket.on('disconnect', (reason) => {
+        console.log('Player disconnected:', socket.id, 'Reason:', reason);
         
         // Clean up hangman games
         for (const gameId in games) {

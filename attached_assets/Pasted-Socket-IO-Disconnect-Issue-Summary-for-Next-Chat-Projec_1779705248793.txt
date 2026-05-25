@@ -1,0 +1,42 @@
+Socket.IO Disconnect Issue — Summary for Next Chat
+Project
+Multiplayer game site (ip-logger-lab) with 5 games: Hangman, Four in a Row, Tic Tac Toe, Draughts, Crossword. Built with Node.js + Express + Socket.IO. Deployed via Procfile (web: node app.js).
+
+The Problem
+Players disconnect or the game freezes after a few minutes in production only — works fine locally.
+
+What's Already Been Done
+1. Fixed excessive ping values
+Before: pingTimeout: 3000000 (50 min) — hid the real issue
+After: pingTimeout: 60000, pingInterval: 25000 — on both server and all 5 client JS files
+2. Added WebSocket transport preference
+Server and all clients now use transports: ['websocket', 'polling'] to prefer WebSocket over polling (proxies often break polling)
+3. Added CORS support on server
+cors: { origin: '*' } in Socket.IO config
+4. Added auto-reconnection on all clients
+reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000
+5. Added diagnostic logging everywhere
+Server: socket.on('disconnect', (reason) => ...) now logs the disconnect reason
+Server: Added process.on('uncaughtException') and process.on('unhandledRejection') to catch silent crashes
+All clients: Log connect (with transport name), disconnect (with reason), and connect_error
+What Still Needs Investigation (after deploying)
+Check browser console (F12) for the disconnect reason:
+"transport close" → server/container restarted (hosting platform issue, e.g., free tier sleeping)
+"ping timeout" → proxy killing idle connections
+"transport error" → networking/proxy blocking WebSocket
+"client namespace disconnect" → bug in app code calling disconnect
+Known architectural risk: in-memory game state
+All game state is stored in plain JS objects (const games = {}, const fourInARowGames = {}, etc.). If the server restarts (common on free hosting), all game rooms are wiped and players are stranded. Solution would be Redis or a database for persistence.
+
+Possible timer leak
+Games use setInterval for turn timers. If timers aren't properly cleared between rounds, they accumulate and cause server lag → delayed socket events → apparent disconnects. Worth auditing clearInterval usage.
+
+Files Modified
+app.js (server) — lines 11-14 (Socket.IO config), added crash handlers before io.on('connection'), disconnect reason logging
+public/js/hangman.js — socket init + logging
+public/js/four-in-a-row.js — socket init + logging
+public/js/tic-tac-toe.js — socket init + logging
+public/js/draughts.js — socket init + logging
+public/js/crossword.js — socket init + logging
+Next Step
+Deploy and reproduce the issue, then check the browser console and server logs for the disconnect reason. That reason will determine the fix.

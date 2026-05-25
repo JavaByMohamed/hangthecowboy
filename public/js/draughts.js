@@ -14,6 +14,56 @@ let validMoves = [];
 let gameOver = false;
 let gameId = null;
 
+// Timer variables
+let turnTimer = null;
+let turnTimeLeft = 30;
+
+function startTurnTimer() {
+    clearTurnTimer();
+    turnTimeLeft = 30;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        updateTimerDisplay();
+        if (turnTimeLeft <= 0) {
+            clearTurnTimer();
+            onTimerExpired();
+        }
+    }, 1000);
+}
+
+function clearTurnTimer() {
+    if (turnTimer) { clearInterval(turnTimer); turnTimer = null; }
+}
+
+function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) {
+        el.textContent = `⏱️ ${turnTimeLeft}s`;
+        el.style.color = turnTimeLeft <= 10 ? '#e74c3c' : '#2c3e50';
+    }
+}
+
+function onTimerExpired() {
+    if (gameOver) return;
+    if (gameMode === 'solo') {
+        if (currentTurn === playerColor) {
+            // Skip player's turn, let AI move
+            currentTurn = currentTurn === 'white' ? 'black' : 'white';
+            updateInfo();
+            renderBoard();
+            checkGameEnd();
+            if (!gameOver) {
+                setTimeout(aiMove, 500);
+            }
+        }
+    } else {
+        if (currentTurn === playerColor) {
+            socket.emit('draughts-skip-turn', { gameId });
+        }
+    }
+}
+
 const BOARD_SIZE = 10;
 
 // ==================== BOARD SETUP ====================
@@ -54,6 +104,7 @@ socket.on('draughts-started', (data) => {
     document.getElementById('gameMessage').classList.add('hidden');
     renderBoard();
     updateInfo();
+    startTurnTimer();
 });
 
 socket.on('draughts-move-made', (data) => {
@@ -63,11 +114,13 @@ socket.on('draughts-move-made', (data) => {
     validMoves = [];
     renderBoard();
     updateInfo();
+    startTurnTimer();
 });
 
 socket.on('draughts-game-ended', (data) => {
     board = data.game.board;
     gameOver = true;
+    clearTurnTimer();
     const msgEl = document.getElementById('gameMessage');
     msgEl.textContent = `🏆 ${data.winner} Wins!`;
     msgEl.classList.remove('hidden');
@@ -111,6 +164,8 @@ function startGame() {
     renderBoard();
     updateInfo();
 
+    startTurnTimer();
+
     if (gameMode === 'solo' && playerColor !== 'white') {
         setTimeout(aiMove, 500);
     }
@@ -126,6 +181,7 @@ function restartGame() {
 
 function quitGame() {
     gameOver = true;
+    clearTurnTimer();
     if (gameMode === 'multiplayer' && gameId) {
         socket.emit('quit-game-draughts', { gameId });
         gameId = null;
@@ -421,6 +477,8 @@ function executeMove(move) {
     selectedPiece = null;
     validMoves = [];
 
+    clearTurnTimer();
+
     if (gameMode === 'multiplayer') {
         // Check game end
         const nextTurn = currentTurn === 'white' ? 'black' : 'white';
@@ -465,7 +523,9 @@ function switchTurn() {
     checkGameEnd();
 
     if (!gameOver && gameMode === 'solo' && currentTurn !== playerColor) {
-        setTimeout(aiMove, 500);
+        setTimeout(() => { aiMove(); if (!gameOver && currentTurn === playerColor) startTurnTimer(); }, 500);
+    } else if (!gameOver && currentTurn === playerColor) {
+        startTurnTimer();
     }
 }
 
@@ -483,6 +543,7 @@ function checkGameEnd() {
     const counts = countPieces(board);
     if (moves.length === 0 || counts.white === 0 || counts.black === 0) {
         gameOver = true;
+        clearTurnTimer();
         let winner;
         if (counts.white === 0) winner = 'Black';
         else if (counts.black === 0) winner = 'White';

@@ -16,6 +16,72 @@ let soloWrongGuesses = [];
 let soloClueShown = false;
 const SOLO_MAX_LIVES = 6;
 
+// Timer variables
+let turnTimer = null;
+let turnTimeLeft = 30;
+
+function startTurnTimer() {
+    clearTurnTimer();
+    turnTimeLeft = 30;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        updateTimerDisplay();
+        if (turnTimeLeft <= 0) {
+            clearTurnTimer();
+            onTimerExpired();
+        }
+    }, 1000);
+}
+
+function clearTurnTimer() {
+    if (turnTimer) { clearInterval(turnTimer); turnTimer = null; }
+}
+
+function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) {
+        el.textContent = `⏱️ ${turnTimeLeft}s`;
+        el.style.color = turnTimeLeft <= 10 ? '#e74c3c' : '#2c3e50';
+    }
+}
+
+function onTimerExpired() {
+    if (gameMode === 'solo') {
+        // Pick a random wrong letter as penalty
+        const unguessed = [];
+        for (let i = 65; i <= 90; i++) {
+            const letter = String.fromCharCode(i);
+            if (!soloGuessedLetters.includes(letter) && !soloWrongGuesses.includes(letter) && !soloWord.includes(letter)) {
+                unguessed.push(letter);
+            }
+        }
+        if (unguessed.length > 0) {
+            const randomLetter = unguessed[Math.floor(Math.random() * unguessed.length)];
+            guessSoloLetter(randomLetter);
+        }
+        // Restart timer if game still going
+        const outOfLives = soloWrongGuesses.length >= SOLO_MAX_LIVES;
+        const wordGuessed = soloWord.split('').every(letter => soloGuessedLetters.includes(letter));
+        if (!outOfLives && !wordGuessed) startTurnTimer();
+    } else {
+        // Multiplayer: auto-guess a wrong letter
+        if (selectedTeam === 'guesser' && gameState && gameState.state === 'playing') {
+            const unguessed = [];
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                if (!gameState.guessedLetters.includes(letter) && !gameState.wrongGuesses.includes(letter) && !gameState.word.includes(letter)) {
+                    unguessed.push(letter);
+                }
+            }
+            if (unguessed.length > 0) {
+                const randomLetter = unguessed[Math.floor(Math.random() * unguessed.length)];
+                socket.emit('guess-letter', { gameId, letter: randomLetter });
+            }
+        }
+    }
+}
+
 // Load word library on page load
 document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/word-library')
@@ -116,10 +182,12 @@ socket.on('word-submitted', (data) => {
 socket.on('letter-guessed', (data) => {
     gameState = data.game;
     updateGameDisplay();
+    if (selectedTeam === 'guesser' && gameState.state === 'playing') startTurnTimer();
 });
 
 socket.on('game-ended', (data) => {
     gameState = data.game;
+    clearTurnTimer();
     updateGameDisplay();
 });
 
@@ -153,6 +221,7 @@ function startSoloMode() {
     document.getElementById('gamePhase').classList.remove('hidden');
     createSoloLetterButtons();
     updateSoloGameDisplay();
+    startTurnTimer();
 }
 
 // Update player counts
@@ -232,6 +301,7 @@ function showGamePhase(guessingTeam) {
 
     createLetterButtons();
     updateGameDisplay();
+    if (selectedTeam === 'guesser') startTurnTimer();
 }
 
 // Submit word (multiplayer)
@@ -322,6 +392,15 @@ function guessSoloLetter(letter) {
 
     updateSoloGameDisplay();
     createSoloLetterButtons();
+
+    // Restart timer if game still going
+    const outOfLives = soloWrongGuesses.length >= SOLO_MAX_LIVES;
+    const wordGuessed = soloWord.split('').every(l => soloGuessedLetters.includes(l));
+    if (outOfLives || wordGuessed) {
+        clearTurnTimer();
+    } else {
+        startTurnTimer();
+    }
 }
 
 // Generate clue from API or fallback
@@ -506,6 +585,7 @@ function updateSoloGameDisplay() {
 
 // Play again - restart the game
 function playAgain() {
+    clearTurnTimer();
     // Reset game variables
     gameMode = '';
     selectedTeam = '';

@@ -11,6 +11,45 @@ let aiDifficulty = null;
 // Solo game state
 let soloGame = null;
 
+// Timer variables
+let turnTimer = null;
+let turnTimeLeft = 30;
+
+function startTurnTimer() {
+    clearTurnTimer();
+    turnTimeLeft = 30;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        updateTimerDisplay();
+        if (turnTimeLeft <= 0) {
+            clearTurnTimer();
+            onTimerExpired();
+        }
+    }, 1000);
+}
+
+function clearTurnTimer() {
+    if (turnTimer) { clearInterval(turnTimer); turnTimer = null; }
+}
+
+function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) {
+        el.textContent = `⏱️ ${turnTimeLeft}s`;
+        el.style.color = turnTimeLeft <= 10 ? '#e74c3c' : '#2c3e50';
+    }
+}
+
+function onTimerExpired() {
+    if (gameMode === 'solo') {
+        if (soloGame.state !== 'playing' || soloGame.currentTurn !== 1) return;
+        skipTurn();
+    } else {
+        socket.emit('skip-turn-crossword', { gameId });
+    }
+}
+
 // Word list for AI (common short words)
 const aiWordList = [
     'cat','dog','run','hat','sun','pen','map','red','big','top',
@@ -52,6 +91,7 @@ function startSolo(difficulty) {
     document.getElementById('gamePhase').classList.remove('hidden');
     buildBoard();
     updateSoloUI();
+    startTurnTimer();
 }
 
 function buildBoard() {
@@ -90,6 +130,7 @@ function placeWord() {
 }
 
 function skipTurn() {
+    clearTurnTimer();
     if (gameMode === 'solo') {
         soloGame.consecutiveSkips++;
         soloGame.currentTurn = 2;
@@ -180,7 +221,10 @@ function placeSoloWord(word, startIndex, direction, playerNumber) {
     renderBoard(game.board, game.cellOwners);
 
     if (playerNumber === 1 && game.currentTurn === 2) {
+        clearTurnTimer();
         setTimeout(aiMove, 800);
+    } else if (playerNumber === 2 && game.currentTurn === 1 && game.state === 'playing') {
+        startTurnTimer();
     }
     return true;
 }
@@ -240,11 +284,14 @@ function aiMove() {
     updateSoloUI();
     if (game.consecutiveSkips >= 2) {
         endSoloGame();
+    } else {
+        startTurnTimer();
     }
 }
 
 function endSoloGame() {
     soloGame.state = 'finished';
+    clearTurnTimer();
     let msg;
     if (soloGame.scores[0] > soloGame.scores[1]) msg = '🎉 You win!';
     else if (soloGame.scores[1] > soloGame.scores[0]) msg = '🤖 AI wins!';
@@ -287,14 +334,18 @@ socket.on('game-started-crossword', (data) => {
     document.getElementById('gamePhase').classList.remove('hidden');
     buildBoard();
     updateMultiplayerUI(game);
+    startTurnTimer();
 });
 
 socket.on('game-updated-crossword', (data) => {
     updateMultiplayerUI(data.game);
+    if (data.game.currentTurn === playerNum) startTurnTimer();
+    else clearTurnTimer();
 });
 
 socket.on('game-over-crossword', (data) => {
     const game = data.game;
+    clearTurnTimer();
     updateMultiplayerUI(game);
     let msg;
     if (game.winner === playerNum) msg = '🎉 You win!';

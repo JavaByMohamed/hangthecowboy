@@ -1011,6 +1011,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('skip-turn-four', (data) => {
+        const gameId = data.gameId;
+        const game = fourInARowGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        // Verify it's this player's turn
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+
+        // Switch turn
+        game.currentTurn = game.currentTurn === 'red' ? 'yellow' : 'red';
+        io.to(gameId).emit('move-made', { game });
+    });
+
     function checkWinner(board, lastRow, lastCol, player) {
         const ROWS = 6;
         const COLS = 7;
@@ -1116,6 +1130,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('draughts-skip-turn', (data) => {
+        const gameId = data.gameId;
+        const game = draughtsGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        // Verify it's this player's turn
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+
+        // Switch turn
+        game.currentTurn = game.currentTurn === 'white' ? 'black' : 'white';
+        io.to(gameId).emit('draughts-move-made', { game });
+    });
+
     // Tic Tac Toe handlers
     socket.on('get-waiting-count-ttt', (callback) => {
         const waitingGames = Object.values(ticTacToeGames).filter(g => g.state === 'waiting' && g.players.length === 1);
@@ -1207,6 +1235,20 @@ io.on('connection', (socket) => {
         if (ticTacToeGames[gameId]) {
             delete ticTacToeGames[gameId];
         }
+    });
+
+    socket.on('skip-turn-ttt', (data) => {
+        const gameId = data.gameId;
+        const game = ticTacToeGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        // Verify it's this player's turn
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.symbol !== game.currentPlayer) return;
+
+        // Switch player
+        game.currentPlayer = game.currentPlayer === 'X' ? 'O' : 'X';
+        io.to(gameId).emit('move-made', { game });
     });
 
     // Crossword Puzzle handlers

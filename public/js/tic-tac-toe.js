@@ -14,6 +14,58 @@ let soloCurrentPlayer = 'X'; // Player is always X, AI is O
 let soloGameActive = true;
 let soloClueShown = false;
 
+// Timer variables
+let turnTimer = null;
+let turnTimeLeft = 30;
+
+function startTurnTimer() {
+    clearTurnTimer();
+    turnTimeLeft = 30;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        updateTimerDisplay();
+        if (turnTimeLeft <= 0) {
+            clearTurnTimer();
+            onTimerExpired();
+        }
+    }, 1000);
+}
+
+function clearTurnTimer() {
+    if (turnTimer) { clearInterval(turnTimer); turnTimer = null; }
+}
+
+function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) {
+        el.textContent = `⏱️ ${turnTimeLeft}s`;
+        el.style.color = turnTimeLeft <= 10 ? '#e74c3c' : '#2c3e50';
+    }
+}
+
+function onTimerExpired() {
+    if (gameEnded) return;
+    if (gameMode === 'solo') {
+        // Skip player's turn - AI moves
+        if (soloCurrentPlayer === 'X' && soloGameActive) {
+            soloCurrentPlayer = 'O';
+            updateGameDisplay();
+            setTimeout(() => {
+                makeAIMove();
+                soloCurrentPlayer = 'X';
+                updateGameDisplay();
+                startTurnTimer();
+            }, 500);
+        }
+    } else {
+        // Multiplayer: skip turn
+        if (gameState && gameState.currentPlayer === playerSymbol) {
+            socket.emit('skip-turn-ttt', { gameId });
+        }
+    }
+}
+
 // Multiplayer socket events
 socket.on('connect', () => {
     console.log('Connected to server');
@@ -37,16 +89,19 @@ socket.on('game-started', (data) => {
     gameState = data.game;
     showGamePhase();
     updateGameDisplay();
+    startTurnTimer();
 });
 
 socket.on('move-made', (data) => {
     gameState = data.game;
     updateGameDisplay();
+    if (!gameEnded) startTurnTimer();
 });
 
 socket.on('game-ended', (data) => {
     gameState = data.game;
     gameEnded = true;
+    clearTurnTimer();
     updateGameDisplay();
     showPlayAgainButton();
 });
@@ -99,6 +154,7 @@ function startSoloGame() {
     document.getElementById('gameModePhase').classList.add('hidden');
     showGamePhase();
     updateGameDisplay();
+    startTurnTimer();
 }
 
 function showGamePhase() {
@@ -127,11 +183,13 @@ function makeMove(index) {
         }
         
         soloBoard[index] = 'X';
+        clearTurnTimer();
         
         // Check if player won
         if (checkWinner(soloBoard, 'X')) {
             soloGameActive = false;
             gameEnded = true;
+            clearTurnTimer();
             updateGameDisplay();
             showPlayAgainButton();
             return;
@@ -141,6 +199,7 @@ function makeMove(index) {
         if (soloBoard.every(cell => cell !== '')) {
             soloGameActive = false;
             gameEnded = true;
+            clearTurnTimer();
             updateGameDisplay();
             showPlayAgainButton();
             return;
@@ -154,6 +213,7 @@ function makeMove(index) {
             makeAIMove();
             soloCurrentPlayer = 'X';
             updateGameDisplay();
+            if (!gameEnded) startTurnTimer();
         }, 500);
     } else {
         // Multiplayer mode move

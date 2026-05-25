@@ -15,6 +15,10 @@ let currentPhase = 'mode-selection';
 let soloCurrentTurn = 'red'; // red always goes first in solo
 let soloGameOver = false;
 
+// Timer variables
+let turnTimer = null;
+let turnTimeLeft = 30;
+
 // Board representation (0 = empty, 1 = red, 2 = yellow)
 let localBoard = Array(ROWS * COLS).fill(0);
 
@@ -63,17 +67,20 @@ socket.on('game-joined', (data) => {
 socket.on('game-started', (data) => {
     gameState = data.game;
     showGamePhase();
+    startTurnTimer();
 });
 
 socket.on('move-made', (data) => {
     gameState = data.game;
     localBoard = gameState.board;
     updateGameDisplay();
+    if (!gameState.gameEnded) startTurnTimer();
 });
 
 socket.on('game-ended', (data) => {
     gameState = data.game;
     localBoard = gameState.board;
+    clearTurnTimer();
     updateGameDisplay();
     showGameStatus();
 });
@@ -131,7 +138,9 @@ function startSoloGame() {
 
     // If AI goes first
     if (aiColor === 'red') {
-        setTimeout(aiMove, 500);
+        setTimeout(() => { aiMove(); if (!soloGameOver) startTurnTimer(); }, 500);
+    } else {
+        startTurnTimer();
     }
 }
 
@@ -176,6 +185,7 @@ function updateSoloDisplay() {
 
 function makeSoloMove(col) {
     if (soloGameOver || soloCurrentTurn !== selectedColor) return;
+    clearTurnTimer();
 
     const row = getLowestRow(localBoard, col);
     if (row === -1) return;
@@ -198,7 +208,7 @@ function makeSoloMove(col) {
 
     soloCurrentTurn = soloCurrentTurn === 'red' ? 'yellow' : 'red';
     updateSoloDisplay();
-    setTimeout(aiMove, 400);
+    setTimeout(() => { aiMove(); if (!soloGameOver) startTurnTimer(); }, 400);
 }
 
 function aiMove() {
@@ -543,3 +553,50 @@ function quitGame() {
     }
     window.location.href = '/';
 }
+
+// ==================== TIMER LOGIC ====================
+
+function startTurnTimer() {
+    clearTurnTimer();
+    turnTimeLeft = 30;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        updateTimerDisplay();
+        if (turnTimeLeft <= 0) {
+            clearTurnTimer();
+            onTimerExpired();
+        }
+    }, 1000);
+}
+
+function clearTurnTimer() {
+    if (turnTimer) { clearInterval(turnTimer); turnTimer = null; }
+}
+
+function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) {
+        el.textContent = `⏱️ ${turnTimeLeft}s`;
+        el.style.color = turnTimeLeft <= 10 ? '#e74c3c' : '#2c3e50';
+    }
+}
+
+function onTimerExpired() {
+    if (gameMode === 'solo') {
+        if (soloGameOver || soloCurrentTurn !== selectedColor) return;
+        // Skip player's turn, AI moves
+        soloCurrentTurn = soloCurrentTurn === 'red' ? 'yellow' : 'red';
+        updateSoloDisplay();
+        setTimeout(() => {
+            aiMove();
+            if (!soloGameOver) startTurnTimer();
+        }, 400);
+    } else {
+        // Multiplayer: skip turn
+        if (gameState && gameState.currentTurn === selectedColor) {
+            socket.emit('skip-turn-four', { gameId });
+        }
+    }
+}
+

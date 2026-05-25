@@ -1,5 +1,5 @@
 // Variables
-const socket = io();
+const socket = io({ pingTimeout: 3000000, pingInterval: 10000 });
 let gameMode = ''; // 'solo' or 'multiplayer'
 let playerSymbol = ''; // 'X' or 'O' for multiplayer, or 'X' (vs AI 'O') for solo
 let gameId = null;

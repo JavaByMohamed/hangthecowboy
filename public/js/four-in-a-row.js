@@ -4,7 +4,7 @@ const COLS = 7;
 const WIN_LENGTH = 4;
 
 // Game Variables
-const socket = io();
+const socket = io({ pingTimeout: 3000000, pingInterval: 10000 });
 let gameMode = null; // 'solo' or 'multiplayer'
 let selectedColor = '';
 let aiColor = '';

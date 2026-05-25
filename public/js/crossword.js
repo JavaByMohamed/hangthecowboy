@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io({ pingTimeout: 3000000, pingInterval: 10000 });
 
 const BOARD_SIZE = 15;
 let gameId = null;

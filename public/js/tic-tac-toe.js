@@ -4,12 +4,41 @@ const socket = io({
     pingInterval: 25000,
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000
 });
 
-socket.on('connect', () => console.log('Connected:', socket.id, 'transport:', socket.io.engine.transport.name));
-socket.on('disconnect', (reason) => console.log('Disconnected:', reason));
+// Keep-alive: ping /health every 4 min to prevent hosting platform from sleeping
+setInterval(() => fetch('/health').catch(() => {}), 4 * 60 * 1000);
+
+// Reconnection overlay
+(function() {
+    const overlay = document.createElement('div');
+    overlay.id = 'reconnect-overlay';
+    overlay.innerHTML = '<div style="background:rgba(0,0,0,0.85);color:#fff;position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;font-family:sans-serif"><div style="font-size:48px;margin-bottom:20px">⚡</div><div style="font-size:22px;margin-bottom:10px">Connection lost</div><div id="reconnect-status" style="font-size:16px;color:#aaa">Reconnecting...</div></div>';
+    overlay.style.display = 'none';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(overlay));
+    socket.on('disconnect', (reason) => {
+        console.log('Disconnected:', reason);
+        overlay.style.display = 'block';
+        const status = document.getElementById('reconnect-status');
+        if (status) status.textContent = 'Reconnecting...';
+    });
+    socket.io.on('reconnect_attempt', (attempt) => {
+        const status = document.getElementById('reconnect-status');
+        if (status) status.textContent = `Reconnecting... attempt ${attempt}`;
+    });
+    socket.io.on('reconnect_failed', () => {
+        const status = document.getElementById('reconnect-status');
+        if (status) status.textContent = 'Could not reconnect. Please refresh the page.';
+    });
+    socket.on('connect', () => {
+        console.log('Connected:', socket.id, 'transport:', socket.io.engine.transport.name);
+        overlay.style.display = 'none';
+    });
+})();
+
 socket.on('connect_error', (err) => console.log('Connection error:', err.message));
 let gameMode = ''; // 'solo' or 'multiplayer'
 let playerSymbol = ''; // 'X' or 'O' for multiplayer, or 'X' (vs AI 'O') for solo
@@ -80,6 +109,31 @@ function onTimerExpired() {
 // Multiplayer socket events
 socket.on('connect', () => {
     console.log('Connected to server');
+    // Attempt rejoin if we were in a game
+    if (gameId && gameMode === 'multiplayer') {
+        socket.emit('rejoin-game', { gameId, gameType: 'ttt' });
+    }
+});
+
+socket.on('game-rejoined', (data) => {
+    gameId = data.gameId;
+    playerId = data.playerId;
+    gameState = data.game;
+    console.log('Rejoined game:', gameId);
+});
+
+socket.on('rejoin-failed', () => {
+    console.log('Rejoin failed — game no longer exists');
+    gameId = null;
+    gameState = null;
+});
+
+socket.on('opponent-temporarily-disconnected', () => {
+    console.log('Opponent temporarily disconnected, waiting...');
+});
+
+socket.on('opponent-reconnected', () => {
+    console.log('Opponent reconnected!');
 });
 
 socket.on('game-joined', (data) => {

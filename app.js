@@ -814,6 +814,11 @@ app.get('/crossword', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'crossword.html'));
 });
 
+// Health check endpoint — prevents hosting platforms from sleeping
+app.get('/health', (req, res) => {
+    res.status(200).send('ok');
+});
+
 // OLD HTML ROUTE REMOVED - Now serving from views/hangman.html
 
 // Catch silent crashes
@@ -1397,77 +1402,85 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- Rejoin support: client sends their old gameId after reconnecting ---
+    socket.on('rejoin-game', (data) => {
+        const { gameId: gId, gameType } = data;
+        const gameMaps = { hangman: games, four: fourInARowGames, ttt: ticTacToeGames, draughts: draughtsGames, crossword: crosswordGames };
+        const map = gameMaps[gameType];
+        if (!map || !map[gId]) { socket.emit('rejoin-failed'); return; }
+        const game = map[gId];
+        // Find the disconnected player slot
+        const slot = game.players.find(p => p.disconnected);
+        if (!slot) { socket.emit('rejoin-failed'); return; }
+        clearTimeout(slot.disconnectTimer);
+        delete slot.disconnectTimer;
+        delete slot.disconnected;
+        slot.id = socket.id;
+        socket.join(gId);
+        console.log('Player rejoined:', socket.id, 'game:', gId);
+        // Send current state back
+        if (gameType === 'draughts') {
+            socket.emit('draughts-rejoined', { gameId: gId, playerId: socket.id, color: slot.color, game });
+        } else if (gameType === 'crossword') {
+            socket.emit('crossword-rejoined', { gameId: gId, playerId: socket.id, game });
+        } else {
+            socket.emit('game-rejoined', { gameId: gId, playerId: socket.id, game });
+        }
+        io.to(gId).emit('opponent-reconnected');
+    });
+
     socket.on('disconnect', (reason) => {
         console.log('Player disconnected:', socket.id, 'Reason:', reason);
-        
-        // Clean up hangman games
+        const GRACE_PERIOD = 30000; // 30 seconds to reconnect
+
+        function handleDisconnect(gameMap, gameId, cleanupEvent) {
+            const game = gameMap[gameId];
+            const player = game.players.find(p => p.id === socket.id);
+            if (!player) return;
+
+            // Mark as disconnected, start grace timer
+            player.disconnected = true;
+            player.disconnectTimer = setTimeout(() => {
+                // Grace period expired — actually remove
+                game.players = game.players.filter(p => p.id !== socket.id);
+                if (game.players.length === 0) {
+                    delete gameMap[gameId];
+                } else {
+                    io.to(gameId).emit(cleanupEvent || 'opponent-disconnected');
+                    if (cleanupEvent !== 'waiting-players') delete gameMap[gameId];
+                }
+            }, GRACE_PERIOD);
+
+            // Notify opponent that player is temporarily away
+            const remaining = game.players.filter(p => !p.disconnected);
+            if (remaining.length > 0 && game.state === 'playing') {
+                io.to(gameId).emit('opponent-temporarily-disconnected');
+            }
+        }
+
         for (const gameId in games) {
-            const game = games[gameId];
-            const hadPlayer = game.players.some(p => p.id === socket.id);
-            game.players = game.players.filter(p => p.id !== socket.id);
-            
-            if (game.players.length === 0) {
-                delete games[gameId];
-            } else if (hadPlayer && game.state === 'playing') {
-                io.to(gameId).emit('opponent-disconnected');
-            } else {
-                io.to(gameId).emit('waiting-players', game.players.length);
+            if (games[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(games, gameId, 'opponent-disconnected');
             }
         }
-
-        // Clean up four in a row games
         for (const gameId in fourInARowGames) {
-            const game = fourInARowGames[gameId];
-            const hadPlayer = game.players.some(p => p.id === socket.id);
-            game.players = game.players.filter(p => p.id !== socket.id);
-            
-            if (game.players.length === 0) {
-                delete fourInARowGames[gameId];
-            } else if (hadPlayer && game.state === 'playing') {
-                io.to(gameId).emit('opponent-disconnected');
-                delete fourInARowGames[gameId];
-            } else {
-                io.to(gameId).emit('waiting-players', game.players.length);
+            if (fourInARowGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(fourInARowGames, gameId, 'opponent-disconnected');
             }
         }
-
-        // Clean up tic tac toe games
         for (const gameId in ticTacToeGames) {
-            const game = ticTacToeGames[gameId];
-            const hadPlayer = game.players.some(p => p.id === socket.id);
-            game.players = game.players.filter(p => p.id !== socket.id);
-            
-            if (game.players.length === 0) {
-                delete ticTacToeGames[gameId];
-            } else if (hadPlayer && game.state === 'playing') {
-                io.to(gameId).emit('opponent-disconnected');
-                delete ticTacToeGames[gameId];
-            } else {
-                io.to(gameId).emit('waiting-players', game.players.length);
+            if (ticTacToeGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(ticTacToeGames, gameId, 'opponent-disconnected');
             }
         }
-
-        // Clean up crossword games
         for (const gameId in crosswordGames) {
-            const game = crosswordGames[gameId];
-            game.players = game.players.filter(p => p.id !== socket.id);
-            
-            if (game.players.length === 0) {
-                delete crosswordGames[gameId];
+            if (crosswordGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(crosswordGames, gameId, 'opponent-disconnected');
             }
         }
-
-        // Clean up draughts games
         for (const gameId in draughtsGames) {
-            const game = draughtsGames[gameId];
-            const hadPlayer = game.players.some(p => p.id === socket.id);
-            game.players = game.players.filter(p => p.id !== socket.id);
-            
-            if (game.players.length === 0) {
-                delete draughtsGames[gameId];
-            } else if (hadPlayer) {
-                io.to(gameId).emit('draughts-opponent-quit');
-                delete draughtsGames[gameId];
+            if (draughtsGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(draughtsGames, gameId, 'draughts-opponent-quit');
             }
         }
     });

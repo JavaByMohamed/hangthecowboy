@@ -1567,6 +1567,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- Game Chat: scoped to game room ---
+    socket.on('game-chat', (data) => {
+        const { gameId, text } = data;
+        if (!gameId || !text) return;
+        io.to(gameId).emit('game-chat', { text: text.substring(0, 300), socketId: socket.id });
+    });
+
     // --- Rejoin support: client sends their old gameId after reconnecting ---
     socket.on('rejoin-game', (data) => {
         const { gameId: gId, gameType } = data;

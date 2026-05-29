@@ -394,6 +394,7 @@ socket.on('game-started-crossword', (data) => {
     buildBoard();
     updateMultiplayerUI(game);
     startTurnTimer();
+    if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
 socket.on('game-updated-crossword', (data) => {

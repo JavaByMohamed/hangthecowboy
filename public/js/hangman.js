@@ -237,6 +237,7 @@ socket.on('game-started', (data) => {
     } else {
         showGamePhase(guessTeam);
     }
+    if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
 socket.on('word-submitted', (data) => {

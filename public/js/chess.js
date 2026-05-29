@@ -932,6 +932,7 @@ if (socket) {
         renderBoard();
         updateInfo();
         if (gameState.currentTurn === playerColor) startTimer();
+        if (typeof showChatWidget === 'function') showChatWidget(true);
     });
 
     socket.on('chess-move-made', (data) => {

@@ -107,6 +107,7 @@ socket.on('game-started', (data) => {
     gameState = data.game;
     showGamePhase();
     startTurnTimer();
+    if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
 socket.on('move-made', (data) => {

@@ -154,6 +154,7 @@ socket.on('draughts-started', (data) => {
     renderBoard();
     updateInfo();
     startTurnTimer();
+    if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
 socket.on('draughts-move-made', (data) => {

@@ -155,6 +155,7 @@ socket.on('game-started', (data) => {
     showGamePhase();
     updateGameDisplay();
     startTurnTimer();
+    if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
 socket.on('move-made', (data) => {

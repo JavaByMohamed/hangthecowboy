@@ -134,3 +134,24 @@
     cursor: pointer;
 }
 
+@media (max-width: 500px) {
+    .chat-widget-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+        bottom: 15px;
+        right: 15px;
+    }
+    .chat-popup {
+        bottom: 75px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-height: 55vh;
+    }
+    .chat-popup-messages {
+        min-height: 150px;
+        max-height: 35vh;
+    }
+}
+

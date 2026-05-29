@@ -7,6 +7,9 @@ body {
     background: url('../images/fourinarow.png') center/cover no-repeat fixed;
     min-height: 100vh;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .navbar {
@@ -42,6 +45,8 @@ body {
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 100%;
 }
 
 h1 {
@@ -215,8 +220,8 @@ button:hover {
 }
 
 .circle {
-    width: 60px;
-    height: 60px;
+    width: min(60px, 10vw);
+    height: min(60px, 10vw);
     border-radius: 50%;
     background: white;
     cursor: pointer;
@@ -224,7 +229,7 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: min(40px, 7vw);
     transition: all 0.3s;
     position: relative;
 }
@@ -287,14 +292,44 @@ button:hover {
 }
 
 @media (max-width: 600px) {
-    .circle {
-        width: 45px;
-        height: 45px;
-        font-size: 30px;
+    body {
+        padding: 15px;
+        padding-top: 70px;
     }
-
+    .container {
+        padding: 15px;
+    }
+    .circle {
+        width: min(38px, 9vw);
+        height: min(38px, 9vw);
+        font-size: 24px;
+    }
+    .circle::after {
+        font-size: min(24px, 6vw) !important;
+    }
+    .board {
+        gap: 3px;
+        padding: 8px;
+    }
     h1 {
         font-size: 24px;
+        margin-bottom: 15px;
+    }
+    .color-selection {
+        flex-direction: column;
+        align-items: center;
+    }
+    .color-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+    .game-info {
+        flex-direction: column;
+        align-items: center;
+    }
+    .turn-indicator {
+        font-size: 16px;
+        padding: 6px 14px;
     }
 }
 

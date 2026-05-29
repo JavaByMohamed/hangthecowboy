@@ -7,6 +7,9 @@ body {
     background: url('../images/hangman.png') center/cover no-repeat fixed;
     min-height: 100vh;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .navbar {
@@ -42,6 +45,8 @@ body {
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 100%;
 }
 
 h1 {
@@ -327,3 +332,58 @@ button:hover {
 .turn-indicator.waiting-turn {
     background: #00ffb7;
 }
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+        padding-top: 70px;
+    }
+    .container {
+        padding: 15px;
+    }
+    h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    .mode-btn {
+        width: 100%;
+        max-width: 220px;
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+    .team-btn {
+        width: 100%;
+        max-width: 180px;
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+    .mode-selection, .team-selection {
+        flex-direction: column;
+        align-items: center;
+    }
+    .word-display {
+        font-size: 22px;
+        letter-spacing: 5px;
+    }
+    .letter-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+        margin: 3px;
+    }
+    .game-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+    .hangman-display {
+        min-width: unset;
+        width: 100%;
+        max-width: 200px;
+    }
+    .game-info-section {
+        min-width: unset;
+        width: 100%;
+    }
+}
+

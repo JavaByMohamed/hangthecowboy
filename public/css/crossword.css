@@ -285,14 +285,41 @@ h2 {
 }
 
 @media (max-width: 700px) {
+    .container {
+        padding: 15px;
+        margin-top: 50px;
+    }
+    h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
     .board {
-        grid-template-columns: repeat(15, 28px);
-        grid-template-rows: repeat(15, 28px);
+        grid-template-columns: repeat(15, min(24px, 5.5vw));
+        grid-template-rows: repeat(15, min(24px, 5.5vw));
     }
     .cell {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
+        width: min(24px, 5.5vw);
+        height: min(24px, 5.5vw);
+        font-size: 10px;
+    }
+    .word-input-area {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .word-input-area input {
+        width: 100%;
+    }
+    .game-info {
+        flex-direction: column;
+        align-items: center;
+    }
+    .turn-indicator {
+        font-size: 16px;
+        padding: 6px 14px;
+    }
+    .color-selection {
+        flex-direction: column;
+        align-items: center;
     }
 }
 

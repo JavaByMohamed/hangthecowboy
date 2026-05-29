@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Sudoku</title>
+    <link rel="stylesheet" href="/css/sudoku.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="container">
+        <h1>🔢 Sudoku</h1>
+
+        <div class="controls">
+            <label for="difficulty">Difficulty:</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+            <button id="newGameBtn" onclick="newGame()">New Game</button>
+        </div>
+
+        <div class="game-info">
+            <span id="timer">⏱️ 00:00</span>
+            <span id="mistakes">❌ Mistakes: 0/3</span>
+        </div>
+
+        <div id="board" class="board"></div>
+
+        <div class="number-pad">
+            <button class="num-btn" onclick="selectNumber(1)">1</button>
+            <button class="num-btn" onclick="selectNumber(2)">2</button>
+            <button class="num-btn" onclick="selectNumber(3)">3</button>
+            <button class="num-btn" onclick="selectNumber(4)">4</button>
+            <button class="num-btn" onclick="selectNumber(5)">5</button>
+            <button class="num-btn" onclick="selectNumber(6)">6</button>
+            <button class="num-btn" onclick="selectNumber(7)">7</button>
+            <button class="num-btn" onclick="selectNumber(8)">8</button>
+            <button class="num-btn" onclick="selectNumber(9)">9</button>
+            <button class="num-btn erase-btn" onclick="eraseCell()">⌫</button>
+        </div>
+
+        <div class="actions">
+            <button onclick="toggleNotes()" id="notesBtn">📝 Notes: OFF</button>
+            <button onclick="getHint()">💡 Hint</button>
+        </div>
+
+        <div id="overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 id="overlayTitle"></h2>
+                <p id="overlayMsg"></p>
+                <button onclick="newGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/sudoku.js"></script>
+</body>
+</html>
+

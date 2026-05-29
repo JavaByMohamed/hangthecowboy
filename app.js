@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public')); // Serve static files (CSS, JS)
+app.use(express.static('public', { maxAge: 0, etag: false })); // Serve static files (CSS, JS) - no caching
 app.use(session({
     secret: 'hangman-secret-key',
     resave: false,
@@ -121,6 +121,44 @@ function createTicTacToeSession() {
 // Crossword Puzzle game manager
 const crosswordGames = {};
 let crosswordGameCounter = 0;
+
+// Chess game manager
+const chessGames = {};
+let chessGameCounter = 0;
+
+function createChessSession() {
+    chessGameCounter++;
+    const gameId = `chess-${chessGameCounter}`;
+    const board = [];
+    const back = ['r','n','b','q','k','b','n','r'];
+    for (let r = 0; r < 8; r++) {
+        board[r] = [];
+        for (let c = 0; c < 8; c++) {
+            if (r === 0) board[r][c] = back[c];
+            else if (r === 1) board[r][c] = 'p';
+            else if (r === 6) board[r][c] = 'P';
+            else if (r === 7) board[r][c] = back[c].toUpperCase();
+            else board[r][c] = '';
+        }
+    }
+    chessGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting',
+        board,
+        currentTurn: 'white',
+        castlingRights: { K: true, Q: true, k: true, q: true },
+        enPassantTarget: null,
+        lastMove: null,
+        capturedWhite: [],
+        capturedBlack: [],
+        halfMoveClock: 0,
+        positionHistory: [],
+        gameOver: false,
+        winner: null
+    };
+    return gameId;
+}
 const CROSSWORD_SIZE = 15;
 const MAX_SKIPS = 2; // game ends after both players skip consecutively
 
@@ -313,6 +351,22 @@ app.get('/', (req, res) => {
                     background-repeat: no-repeat;
                     height: 435px;
                 }
+                             
+                .game-card:nth-child(6) .game-card-image {
+                    background-image: url('/images/sudoku.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
+                .game-card:nth-child(7) .game-card-image {
+                    background-image: url('/images/chess.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
                 
                 .game-card:nth-child(1) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
@@ -331,6 +385,14 @@ app.get('/', (req, res) => {
                 }
                 
                 .game-card:nth-child(5) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(6) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(7) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -477,7 +539,7 @@ app.get('/', (req, res) => {
                             <h2>Draughts</h2>
                             <p>Classic checkers — capture all opponent pieces!</p>
                             <div style="margin-top: auto;">
-                                <span class="game-type">🤖 Solo or Two Players</span>
+                                <span class="game-type">🤖 Solo or Multiplayer</span>
                             </div>
                         </div>
                     </a>
@@ -489,6 +551,32 @@ app.get('/', (req, res) => {
                         <div class="game-card-content">
                             <h2>Crossword Puzzle</h2>
                             <p>Build words together by connecting letters on the board!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🤖 Solo or Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Sudoku Card -->
+                    <a href="/sudoku" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Sudoku</h2>
+                            <p>Fill the 9×9 grid so every row, column and box has 1–9!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🧩 Solo</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Chess Card -->
+                    <a href="/chess" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Chess</h2>
+                            <p>The classic strategy game — checkmate your opponent!</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">🤖 Solo or Multiplayer</span>
                             </div>
@@ -659,6 +747,14 @@ app.get('/games', (req, res) => {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
+                .game-card:nth-child(6) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(7) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
                 .game-card-icon {
                     font-size: 100px;
                     z-index: 1;
@@ -812,6 +908,14 @@ app.get('/draughts', (req, res) => {
 
 app.get('/crossword', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'crossword.html'));
+});
+
+app.get('/sudoku', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'sudoku.html'));
+});
+
+app.get('/chess', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'chess.html'));
 });
 
 // Health check endpoint — prevents hosting platforms from sleeping
@@ -1402,10 +1506,71 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Chess handlers
+    socket.on('join-game-chess', (data) => {
+        const color = data.color;
+        let gameId = null;
+        for (const gId in chessGames) {
+            const game = chessGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1 && game.players[0].color !== color) {
+                gameId = gId;
+                break;
+            }
+        }
+        if (!gameId) gameId = createChessSession();
+        const game = chessGames[gameId];
+        game.players.push({ id: socket.id, color });
+        socket.join(gameId);
+        socket.emit('chess-joined', { gameId, playerId: socket.id, color, game });
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            io.to(gameId).emit('chess-started', { game });
+        }
+    });
+
+    socket.on('chess-move', (data) => {
+        const gameId = data.gameId;
+        const game = chessGames[gameId];
+        if (!game || game.gameOver) return;
+        game.board = data.board;
+        game.currentTurn = data.turn;
+        game.castlingRights = data.castlingRights;
+        game.enPassantTarget = data.enPassantTarget;
+        game.lastMove = data.lastMove;
+        game.capturedWhite = data.capturedWhite;
+        game.capturedBlack = data.capturedBlack;
+        game.halfMoveClock = data.halfMoveClock;
+        game.positionHistory = data.positionHistory;
+        if (data.gameOver) {
+            game.gameOver = true;
+            io.to(gameId).emit('chess-game-ended', { game, winner: data.winner || 'draw' });
+        } else {
+            io.to(gameId).emit('chess-move-made', { game });
+        }
+    });
+
+    socket.on('chess-skip-turn', (data) => {
+        const gameId = data.gameId;
+        const game = chessGames[gameId];
+        if (!game || game.gameOver) return;
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+        game.currentTurn = game.currentTurn === 'white' ? 'black' : 'white';
+        io.to(gameId).emit('chess-move-made', { game });
+    });
+
+    socket.on('quit-game-chess', (data) => {
+        const gameId = data.gameId;
+        if (chessGames[gameId]) {
+            socket.to(gameId).emit('chess-opponent-quit');
+            delete chessGames[gameId];
+        }
+    });
+
     // --- Rejoin support: client sends their old gameId after reconnecting ---
     socket.on('rejoin-game', (data) => {
         const { gameId: gId, gameType } = data;
-        const gameMaps = { hangman: games, four: fourInARowGames, ttt: ticTacToeGames, draughts: draughtsGames, crossword: crosswordGames };
+        const gameMaps = { hangman: games, four: fourInARowGames, ttt: ticTacToeGames, draughts: draughtsGames, crossword: crosswordGames, chess: chessGames };
         const map = gameMaps[gameType];
         if (!map || !map[gId]) { socket.emit('rejoin-failed'); return; }
         const game = map[gId];
@@ -1423,6 +1588,8 @@ io.on('connection', (socket) => {
             socket.emit('draughts-rejoined', { gameId: gId, playerId: socket.id, color: slot.color, game });
         } else if (gameType === 'crossword') {
             socket.emit('crossword-rejoined', { gameId: gId, playerId: socket.id, game });
+        } else if (gameType === 'chess') {
+            socket.emit('chess-rejoined', { gameId: gId, playerId: socket.id, color: slot.color, game });
         } else {
             socket.emit('game-rejoined', { gameId: gId, playerId: socket.id, game });
         }
@@ -1481,6 +1648,11 @@ io.on('connection', (socket) => {
         for (const gameId in draughtsGames) {
             if (draughtsGames[gameId].players.some(p => p.id === socket.id)) {
                 handleDisconnect(draughtsGames, gameId, 'draughts-opponent-quit');
+            }
+        }
+        for (const gameId in chessGames) {
+            if (chessGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(chessGames, gameId, 'chess-opponent-quit');
             }
         }
     });

@@ -92,6 +92,20 @@ function updateTimerDisplay() {
     document.getElementById('timer').textContent = `⏱️ ${m}:${s}`;
 }
 
+function updateNumberPad() {
+    for (let num = 1; num <= 9; num++) {
+        let count = 0;
+        for (let r = 0; r < 9; r++)
+            for (let c = 0; c < 9; c++)
+                if (puzzle[r][c] === num && puzzle[r][c] === solution[r][c]) count++;
+        const btn = document.querySelector(`.num-btn[data-num="${num}"]`);
+        if (btn) {
+            btn.disabled = count >= 9;
+            btn.classList.toggle('completed', count >= 9);
+        }
+    }
+}
+
 function renderBoard() {
     const board = document.getElementById('board');
     board.innerHTML = '';
@@ -128,6 +142,7 @@ function renderBoard() {
         }
     }
     highlightCells();
+    updateNumberPad();
 }
 
 function selectCell(r, c) {

@@ -12,8 +12,20 @@
     </div>
 
     <div id="mode-select" class="container">
-        <h1>🕵️ Guess Who? - Celebrity Edition</h1>
-        <p class="subtitle">Figure out the secret celebrity!</p>
+        <h1>🕵️ Guess Who?</h1>
+        <p class="subtitle">Figure out the secret character!</p>
+
+        <div class="category-select">
+            <p><strong>Choose a category:</strong></p>
+            <div class="category-buttons">
+                <button class="category-btn active" data-category="celebrities" onclick="selectCategory('celebrities')">🎤 Celebrities</button>
+                <button class="category-btn" data-category="animals" onclick="selectCategory('animals')">🐾 Animals</button>
+                <button class="category-btn" data-category="countries" onclick="selectCategory('countries')">🌍 Countries</button>
+                <button class="category-btn" data-category="cartoons" onclick="selectCategory('cartoons')">🎨 Cartoons</button>
+                <button class="category-btn" data-category="sports" onclick="selectCategory('sports')">⚽ Sports Stars</button>
+            </div>
+        </div>
+
         <div class="mode-buttons">
             <button onclick="startSolo()">🎯 Solo vs AI</button>
             <button onclick="startMultiplayer()">👥 Multiplayer</button>
@@ -58,7 +70,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/guess-who.js?v=20260530"></script>
+    <script src="/js/guess-who.js?v=20260530b"></script>
     <script src="/js/chat-widget.js"></script>
 </body>
 </html>

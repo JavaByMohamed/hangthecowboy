@@ -51,6 +51,44 @@ body {
     font-size: 1.1rem;
 }
 
+.category-select {
+    margin-bottom: 25px;
+}
+
+.category-select p {
+    margin-bottom: 12px;
+    font-size: 1rem;
+}
+
+.category-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.category-btn {
+    padding: 10px 18px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    transition: all 0.3s;
+}
+
+.category-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.4);
+}
+
+.category-btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #667eea;
+    font-weight: bold;
+}
+
 h1 {
     font-size: 2.2rem;
     margin-bottom: 10px;

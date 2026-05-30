@@ -4,6 +4,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
+    "fresh": "pkill -f 'node index.js' 2>/dev/null; pkill -f 'nodemon' 2>/dev/null; nodemon index.js",
+    "restart": "pkill -f 'node index.js' || true && node index.js",
+    "stop": "pkill -f 'node index.js' || echo 'No process found'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,5 +19,8 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

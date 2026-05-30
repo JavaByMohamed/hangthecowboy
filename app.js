@@ -126,6 +126,37 @@ let crosswordGameCounter = 0;
 const chessGames = {};
 let chessGameCounter = 0;
 
+// Guess Who game manager
+const guessWhoGames = {};
+let guessWhoGameCounter = 0;
+
+const guessWhoCelebrities = [
+    { name: "Taylor Swift", img: "🎤", traits: { gender: "female", hair: "blonde", american: true, singer: true, actor: false, glasses: false, over40: false } },
+    { name: "Beyoncé", img: "👑", traits: { gender: "female", hair: "brown", american: true, singer: true, actor: false, glasses: false, over40: true } },
+    { name: "Drake", img: "🎵", traits: { gender: "male", hair: "black", american: false, singer: true, actor: true, glasses: false, over40: true } },
+    { name: "Adele", img: "🎶", traits: { gender: "female", hair: "brown", american: false, singer: true, actor: false, glasses: false, over40: false } },
+    { name: "Ed Sheeran", img: "🎸", traits: { gender: "male", hair: "red", american: false, singer: true, actor: false, glasses: true, over40: false } },
+    { name: "Rihanna", img: "💎", traits: { gender: "female", hair: "black", american: false, singer: true, actor: true, glasses: false, over40: true } },
+    { name: "The Rock", img: "💪", traits: { gender: "male", hair: "bald", american: true, singer: false, actor: true, glasses: false, over40: true } },
+    { name: "Oprah", img: "📺", traits: { gender: "female", hair: "black", american: true, singer: false, actor: true, glasses: true, over40: true } },
+    { name: "Tom Hanks", img: "🎬", traits: { gender: "male", hair: "brown", american: true, singer: false, actor: true, glasses: false, over40: true } },
+    { name: "Zendaya", img: "🌟", traits: { gender: "female", hair: "brown", american: true, singer: true, actor: true, glasses: false, over40: false } },
+    { name: "Elon Musk", img: "🚀", traits: { gender: "male", hair: "brown", american: true, singer: false, actor: false, glasses: false, over40: true } },
+    { name: "Billie Eilish", img: "🖤", traits: { gender: "female", hair: "blonde", american: true, singer: true, actor: false, glasses: false, over40: false } },
+    { name: "Chris Hemsworth", img: "⚡", traits: { gender: "male", hair: "blonde", american: false, singer: false, actor: true, glasses: false, over40: true } },
+    { name: "Ariana Grande", img: "☁️", traits: { gender: "female", hair: "brown", american: true, singer: true, actor: true, glasses: false, over40: false } },
+    { name: "Morgan Freeman", img: "🎭", traits: { gender: "male", hair: "white", american: true, singer: false, actor: true, glasses: true, over40: true } },
+    { name: "Lady Gaga", img: "🦄", traits: { gender: "female", hair: "blonde", american: true, singer: true, actor: true, glasses: true, over40: true } },
+    { name: "Will Smith", img: "🤴", traits: { gender: "male", hair: "black", american: true, singer: true, actor: true, glasses: false, over40: true } },
+    { name: "Emma Watson", img: "⚡", traits: { gender: "female", hair: "brown", american: false, singer: false, actor: true, glasses: false, over40: false } },
+    { name: "Bruno Mars", img: "🎩", traits: { gender: "male", hair: "black", american: true, singer: true, actor: false, glasses: false, over40: true } },
+    { name: "Shakira", img: "💃", traits: { gender: "female", hair: "blonde", american: false, singer: true, actor: false, glasses: false, over40: true } },
+    { name: "Robert Downey Jr", img: "🦾", traits: { gender: "male", hair: "brown", american: true, singer: false, actor: true, glasses: true, over40: true } },
+    { name: "Selena Gomez", img: "🌹", traits: { gender: "female", hair: "black", american: true, singer: true, actor: true, glasses: false, over40: false } },
+    { name: "Keanu Reeves", img: "🔫", traits: { gender: "male", hair: "black", american: false, singer: false, actor: true, glasses: false, over40: true } },
+    { name: "Post Malone", img: "🍺", traits: { gender: "male", hair: "brown", american: true, singer: true, actor: false, glasses: false, over40: false } },
+];
+
 function createChessSession() {
     chessGameCounter++;
     const gameId = `chess-${chessGameCounter}`;
@@ -369,6 +400,14 @@ app.get('/', (req, res) => {
                     height: 435px;
                 }
                 
+                .game-card:nth-child(8) .game-card-image {
+                    background-image: url('/images/guesswho.png');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
                 .game-card:nth-child(1) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
@@ -394,6 +433,10 @@ app.get('/', (req, res) => {
                 }
                 
                 .game-card:nth-child(7) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(8) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -580,6 +623,19 @@ app.get('/', (req, res) => {
                             <p>The classic strategy game — checkmate your opponent!</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">🤖 Solo or Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <!-- Guess Who Card -->
+                    <a href="/guess-who" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Guess Who?</h2>
+                            <p>Ask questions and figure out the secret celebrity!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎯 Solo & 👥 Multiplayer</span>
                             </div>
                         </div>
                     </a>
@@ -880,6 +936,20 @@ app.get('/games', (req, res) => {
                             </div>
                         </div>
                     </a>
+
+                    <!-- Guess Who Card -->
+                    <a href="/guess-who" class="game-card">
+                        <div class="game-card-image">
+                            <div class="game-card-icon">🕵️</div>
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Guess Who?</h2>
+                            <p>Ask questions and figure out the secret celebrity!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎯 Solo & 👥 Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="footer">
@@ -921,6 +991,11 @@ app.get('/chess', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'chess.html'));
 });
 
+app.get('/guess-who', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.sendFile(path.join(__dirname, 'views', 'guess-who.html'));
+});
+
 // Health check endpoint — prevents hosting platforms from sleeping
 app.get('/health', (req, res) => {
     res.status(200).send('ok');
@@ -937,6 +1012,26 @@ process.on('unhandledRejection', (err) => {
 });
 
 // Socket.IO event handlers
+// Guess Who question evaluator
+function gwEvaluateQuestion(q, t) {
+    const lower = q.toLowerCase();
+    if (lower.includes('male') || lower.includes(' man') || lower.includes(' guy') || lower.includes(' he') || lower.includes('boy')) return t.gender === 'male' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('female') || lower.includes('woman') || lower.includes(' she') || lower.includes('girl') || lower.includes('lady')) return t.gender === 'female' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('blonde') || lower.includes('blond')) return t.hair === 'blonde' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('red hair') || lower.includes('ginger') || lower.includes('redhead')) return t.hair === 'red' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('brown hair')) return t.hair === 'brown' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('black hair')) return t.hair === 'black' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('white hair') || lower.includes('grey hair') || lower.includes('gray hair')) return t.hair === 'white' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('bald') || lower.includes('no hair')) return t.hair === 'bald' ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('american') || lower.includes('from america') || lower.includes('from the us')) return t.american ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('singer') || lower.includes('sing') || lower.includes('music')) return t.singer ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('actor') || lower.includes('actress') || lower.includes('act') || lower.includes('movie') || lower.includes('film')) return t.actor ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('glasses')) return t.glasses ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('over 40') || lower.includes('older') || lower.includes('old') || lower.includes('40')) return t.over40 ? 'Yes ✅' : 'No ❌';
+    if (lower.includes('young') || lower.includes('under 40')) return !t.over40 ? 'Yes ✅' : 'No ❌';
+    return "🤔 Try asking about: gender, hair color, American, singer, actor, glasses, or over 40.";
+}
+
 io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
 
@@ -1606,6 +1701,135 @@ io.on('connection', (socket) => {
         io.to(gId).emit('opponent-reconnected');
     });
 
+    // --- GUESS WHO MULTIPLAYER ---
+    socket.on('gw-join', () => {
+        // Prevent double-join
+        for (const gId in guessWhoGames) {
+            if (guessWhoGames[gId].players.some(p => p.id === socket.id)) return;
+        }
+        let gameId = null;
+        for (const gId in guessWhoGames) {
+            if (guessWhoGames[gId].state === 'waiting' && guessWhoGames[gId].players.length === 1) {
+                gameId = gId;
+                break;
+            }
+        }
+        if (!gameId) {
+            guessWhoGameCounter++;
+            gameId = `gw-${guessWhoGameCounter}`;
+            guessWhoGames[gameId] = { id: gameId, players: [], state: 'waiting', currentTurn: 1, secrets: [] };
+        }
+        const game = guessWhoGames[gameId];
+        const playerNum = game.players.length + 1;
+        game.players.push({ id: socket.id, num: playerNum, chosenSecret: null });
+        socket.join(gameId);
+
+        if (game.players.length === 2) {
+            game.state = 'picking';
+            // Tell both players to pick their secret celebrity
+            io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1 });
+            io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2 });
+        }
+    });
+
+    socket.on('gw-choose-secret', (data) => {
+        const game = guessWhoGames[data.gameId];
+        if (!game || game.state !== 'picking') return;
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player) return;
+
+        const celeb = guessWhoCelebrities.find(c => c.name === data.name);
+        if (!celeb) return;
+        player.chosenSecret = celeb;
+
+        // Check if both have picked
+        if (game.players[0].chosenSecret && game.players[1].chosenSecret) {
+            game.state = 'playing';
+            game.secrets = [game.players[0].chosenSecret, game.players[1].chosenSecret];
+            game.currentTurn = 1;
+
+            // Player 1: your secret is secrets[0], you guess secrets[1] (player 2's pick)
+            io.to(game.players[0].id).emit('gw-start', {
+                gameId: data.gameId, playerNum: 1, yourSecret: game.secrets[0], opponentSecret: game.secrets[1], yourTurn: true
+            });
+            // Player 2: your secret is secrets[1], you guess secrets[0] (player 1's pick)
+            io.to(game.players[1].id).emit('gw-start', {
+                gameId: data.gameId, playerNum: 2, yourSecret: game.secrets[1], opponentSecret: game.secrets[0], yourTurn: false
+            });
+        } else {
+            socket.emit('gw-waiting-pick');
+        }
+    });
+
+    socket.on('gw-ask', (data) => {
+        const game = guessWhoGames[data.gameId];
+        if (!game || game.state !== 'playing') return;
+        const playerIdx = game.players.findIndex(p => p.id === socket.id);
+        if (playerIdx === -1) return;
+        const playerNum = playerIdx + 1;
+        if (game.currentTurn !== playerNum) return;
+
+        // The asker is trying to guess the opponent's secret
+        // Player 1 guesses secrets[1], Player 2 guesses secrets[0]
+        const targetSecret = game.secrets[playerNum === 1 ? 1 : 0];
+        const answer = gwEvaluateQuestion(data.question, targetSecret.traits);
+
+        // Switch turn
+        game.currentTurn = playerNum === 1 ? 2 : 1;
+
+        // Notify both
+        io.to(game.players[0].id).emit('gw-question', {
+            from: playerNum === 1 ? 'You' : 'Opponent', question: data.question, answer, yourTurn: game.currentTurn === 1
+        });
+        io.to(game.players[1].id).emit('gw-question', {
+            from: playerNum === 2 ? 'You' : 'Opponent', question: data.question, answer, yourTurn: game.currentTurn === 2
+        });
+    });
+
+    socket.on('gw-guess', (data) => {
+        const game = guessWhoGames[data.gameId];
+        if (!game || game.state !== 'playing') return;
+        const playerIdx = game.players.findIndex(p => p.id === socket.id);
+        if (playerIdx === -1) return;
+        const playerNum = playerIdx + 1;
+        if (game.currentTurn !== playerNum) return;
+
+        const targetSecret = game.secrets[playerNum === 1 ? 1 : 0];
+        const normalizedGuess = data.guess.toLowerCase();
+        const normalizedAnswer = targetSecret.name.toLowerCase();
+
+        if (normalizedGuess === normalizedAnswer || normalizedAnswer.includes(normalizedGuess) || normalizedGuess.includes(normalizedAnswer)) {
+            game.state = 'finished';
+            io.to(socket.id).emit('gw-win', { msg: `Correct! It was ${targetSecret.name} ${targetSecret.img}!` });
+            const opponentId = game.players[playerNum === 1 ? 1 : 0].id;
+            io.to(opponentId).emit('gw-lose', { msg: `Opponent guessed correctly! It was ${targetSecret.name} ${targetSecret.img}.` });
+            delete guessWhoGames[data.gameId];
+        } else {
+            // Wrong guess, switch turn
+            game.currentTurn = playerNum === 1 ? 2 : 1;
+            io.to(game.players[0].id).emit('gw-question', {
+                from: playerNum === 1 ? 'You' : 'Opponent', question: `Guessed: ${data.guess}`, answer: '❌ Wrong!', yourTurn: game.currentTurn === 1
+            });
+            io.to(game.players[1].id).emit('gw-question', {
+                from: playerNum === 2 ? 'You' : 'Opponent', question: `Guessed: ${data.guess}`, answer: '❌ Wrong!', yourTurn: game.currentTurn === 2
+            });
+        }
+    });
+
+    socket.on('gw-giveup', (data) => {
+        const game = guessWhoGames[data.gameId];
+        if (!game) return;
+        const playerIdx = game.players.findIndex(p => p.id === socket.id);
+        if (playerIdx === -1) return;
+        game.state = 'finished';
+        const opponentIdx = playerIdx === 0 ? 1 : 0;
+        io.to(socket.id).emit('gw-lose', { msg: 'You gave up!' });
+        if (game.players[opponentIdx]) {
+            io.to(game.players[opponentIdx].id).emit('gw-win', { msg: 'Opponent gave up! You win!' });
+        }
+        delete guessWhoGames[data.gameId];
+    });
+
     socket.on('disconnect', (reason) => {
         console.log('Player disconnected:', socket.id, 'Reason:', reason);
         const GRACE_PERIOD = 30000; // 30 seconds to reconnect
@@ -1663,6 +1887,16 @@ io.on('connection', (socket) => {
         for (const gameId in chessGames) {
             if (chessGames[gameId].players.some(p => p.id === socket.id)) {
                 handleDisconnect(chessGames, gameId, 'chess-opponent-quit');
+            }
+        }
+        for (const gameId in guessWhoGames) {
+            if (guessWhoGames[gameId].players.some(p => p.id === socket.id)) {
+                const game = guessWhoGames[gameId];
+                const opponentPlayer = game.players.find(p => p.id !== socket.id);
+                if (opponentPlayer) {
+                    io.to(opponentPlayer.id).emit('gw-opponent-quit');
+                }
+                delete guessWhoGames[gameId];
             }
         }
     });

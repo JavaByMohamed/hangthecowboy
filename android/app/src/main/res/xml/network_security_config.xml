@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow HTTP for development/localhost connections -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Add your development machine's IP here if testing on physical device -->
+    </domain-config>
+
+    <!-- All other connections must use HTTPS (production) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">*.com</domain>
+        <domain includeSubdomains="true">*.net</domain>
+        <domain includeSubdomains="true">*.org</domain>
+    </domain-config>
+</network-security-config>

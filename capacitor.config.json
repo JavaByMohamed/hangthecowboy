@@ -1,0 +1,13 @@
+{
+  "appId": "com.gamelab.app",
+  "appName": "GameLab",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

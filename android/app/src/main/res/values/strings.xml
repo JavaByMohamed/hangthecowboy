@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GameLab</string>
+    <string name="title_activity_main">GameLab</string>
+    <string name="package_name">com.gamelab.app</string>
+    <string name="custom_url_scheme">com.gamelab.app</string>
+</resources>

@@ -646,6 +646,74 @@ app.get('/', (req, res) => {
                     font-size: 14px;
                 }
 
+                .apk-download-section {
+                    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                    border-radius: 12px;
+                    padding: 40px 30px;
+                    margin: 50px 0;
+                    text-align: center;
+                }
+
+                .apk-download-section h2 {
+                    color: #667eea;
+                    margin-bottom: 15px;
+                    font-size: 28px;
+                }
+
+                .apk-download-section > p {
+                    color: #555;
+                    font-size: 16px;
+                    margin: 10px 0;
+                }
+
+                .apk-download-btn {
+                    display: inline-block;
+                    background: #667eea;
+                    color: white;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin: 15px 0;
+                    transition: all 0.3s ease;
+                }
+
+                .apk-download-btn:hover {
+                    background: #5a6fd6;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+                }
+
+                .apk-fallback {
+                    font-size: 14px;
+                    color: #888;
+                    margin-top: 15px;
+                }
+
+                .apk-fallback a {
+                    color: #667eea;
+                    text-decoration: none;
+                    font-weight: 500;
+                }
+
+                .apk-fallback a:hover {
+                    text-decoration: underline;
+                }
+
+                .apk-note {
+                    color: #f39c12;
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-weight: 500;
+                }
+
+                .apk-hint {
+                    color: #3498db;
+                    font-size: 14px;
+                    margin-top: 10px;
+                }
+
                 .apk-download-button {
                     display: inline-block;
                     background: #667eea;
@@ -807,6 +875,20 @@ app.get('/', (req, res) => {
                     <a href="/download/latest-apk" class="apk-download-button">Download Latest Release APK</a>
                     <p class="apk-status">${latestApkStatus}</p>
                 </div>
+
+                <!-- Download Android APK Section -->
+                <section class="intro apk-download-section">
+                    <h2>📱 Get the Android App</h2>
+                    <p>Take GameLab on the go with our native Android app.</p>
+                    <a href="/download/latest-apk" class="apk-download-btn">
+                        ⬇️ Download Android APK
+                    </a>
+                    <p class="apk-status">${latestApkStatus}</p>
+                    <p class="apk-note">⚠️ Android only. You may need to allow installs from unknown sources.</p>
+                    <p class="apk-hint">
+                        ℹ️ APK is for Android devices. You can still download it to transfer to your phone.
+                    </p>
+                </section>
 
                 <div class="footer">
                     <p style="color: #999; font-size: 14px;">
@@ -1101,6 +1183,74 @@ app.get('/games', (req, res) => {
                 .apk-download-button:hover {
                     background: #5a6fd6;
                 }
+
+                .apk-download-section {
+                    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                    border-radius: 12px;
+                    padding: 40px 30px;
+                    margin: 50px 0;
+                    text-align: center;
+                }
+
+                .apk-download-section h2 {
+                    color: #667eea;
+                    margin-bottom: 15px;
+                    font-size: 28px;
+                }
+
+                .apk-download-section > p {
+                    color: #555;
+                    font-size: 16px;
+                    margin: 10px 0;
+                }
+
+                .apk-download-btn {
+                    display: inline-block;
+                    background: #667eea;
+                    color: white;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin: 15px 0;
+                    transition: all 0.3s ease;
+                }
+
+                .apk-download-btn:hover {
+                    background: #5a6fd6;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+                }
+
+                .apk-fallback {
+                    font-size: 14px;
+                    color: #888;
+                    margin-top: 15px;
+                }
+
+                .apk-fallback a {
+                    color: #667eea;
+                    text-decoration: none;
+                    font-weight: 500;
+                }
+
+                .apk-fallback a:hover {
+                    text-decoration: underline;
+                }
+
+                .apk-note {
+                    color: #f39c12;
+                    font-size: 14px;
+                    margin-top: 15px;
+                    font-weight: 500;
+                }
+
+                .apk-hint {
+                    color: #3498db;
+                    font-size: 14px;
+                    margin-top: 10px;
+                }
                 
                 .back-link {
                     color: #667eea;
@@ -1185,6 +1335,20 @@ app.get('/games', (req, res) => {
                     <a href="/download/latest-apk" class="apk-download-button">Download Latest Release APK</a>
                     <p class="apk-status">${latestApkStatus}</p>
                 </div>
+
+                <!-- Download Android APK Section -->
+                <section class="intro apk-download-section">
+                    <h2>📱 Get the Android App</h2>
+                    <p>Take GameLab on the go with our native Android app.</p>
+                    <a href="/download/latest-apk" class="apk-download-btn">
+                        ⬇️ Download Android APK
+                    </a>
+                    <p class="apk-status">${latestApkStatus}</p>
+                    <p class="apk-note">⚠️ Android only. You may need to allow installs from unknown sources.</p>
+                    <p class="apk-hint">
+                        ℹ️ APK is for Android devices. You can still download it to transfer to your phone.
+                    </p>
+                </section>
 
                 <div class="footer">
                     <p style="color: #999; font-size: 14px;">

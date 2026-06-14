@@ -77,7 +77,41 @@ cd android
 
 # Built APK will be in:
 # app/build/outputs/apk/debug/app-debug.apk  (debug)
-# app/build/outputs/apk/release/app-release.apk  (release)
+# app/build/outputs/apk/release/app-release-unsigned.apk  (release, no signing config)
+# app/build/outputs/apk/release/app-release.apk  (release, signing configured)
+```
+
+### Configure signing for command-line release builds
+
+```bash
+cd /Users/mohamed.abdelmonem/IdeaProjects/MO-PROJECTS/gamelab/android
+
+# 1) Generate keystore (choose secure passwords when prompted)
+keytool -genkeypair -v \
+  -keystore release-key.jks \
+  -alias gamelab-release \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+# 2) Copy template and fill real values
+cp keystore.properties.example keystore.properties
+```
+
+Edit `android/keystore.properties`:
+
+```properties
+storeFile=/absolute/path/to/release-key.jks
+storePassword=your_store_password
+keyAlias=gamelab-release
+keyPassword=your_key_password
+```
+
+Then run:
+
+```bash
+cd /Users/mohamed.abdelmonem/IdeaProjects/MO-PROJECTS/gamelab/android
+./gradlew assembleRelease
 ```
 
 ## Running the APK
@@ -228,7 +262,8 @@ Once your APK is working:
 - Android project: `/Users/mohamed.abdelmonem/AndroidStudioProjects/gamelab/android/`
 - Web assets: `/Users/mohamed.abdelmonem/AndroidStudioProjects/gamelab/public/`
 - Built APK (debug): `android/app/build/outputs/apk/debug/app-debug.apk`
-- Built APK (release): `android/app/build/outputs/apk/release/app-release.apk`
+- Built APK (release unsigned): `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+- Built APK (release signed): `android/app/build/outputs/apk/release/app-release.apk`
 
 ## Next Steps
 

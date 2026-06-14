@@ -381,8 +381,8 @@
         </div>
 
         <div class="apk-download">
-            <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
-            <p id="latest-apk-status" class="apk-status">Latest APK: checking...</p>
+            <a href="/download/latest-apk" class="apk-download-button">Download Latest Release APK</a>
+            <p id="latest-apk-status" class="apk-status">Latest release APK: checking...</p>
         </div>
 
         <div class="footer">
@@ -415,14 +415,14 @@
             try {
                 const response = await fetch('/api/latest-apk', { cache: 'no-store' });
                 if (!response.ok) {
-                    statusElement.textContent = 'Latest APK: not available yet. Build the Android app to generate one.';
+                    statusElement.textContent = 'Latest release APK: not available yet. Build the Android release APK first.';
                     return;
                 }
 
                 const apk = await response.json();
-                statusElement.textContent = `Latest APK: ${apk.fileName} (${apk.sizeLabel}) updated ${new Date(apk.updatedAt).toLocaleString()}`;
+                statusElement.textContent = `Latest release APK: ${apk.fileName} (${apk.sizeLabel}) updated ${new Date(apk.updatedAt).toLocaleString()}`;
             } catch (error) {
-                statusElement.textContent = 'Latest APK: unavailable right now.';
+                statusElement.textContent = 'Latest release APK: unavailable right now.';
             }
         }
 

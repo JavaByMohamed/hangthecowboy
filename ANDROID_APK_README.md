@@ -85,8 +85,48 @@ cd android
 
 # Release APK (for distribution, requires signing)
 ./gradlew assembleRelease
-# Find at: app/build/outputs/apk/release/app-release.apk
+# Unsigned output (if signing is not configured):
+# app/build/outputs/apk/release/app-release-unsigned.apk
+# Signed output (if signing is configured):
+# app/build/outputs/apk/release/app-release.apk
 ```
+
+### Configure release signing (once)
+
+```bash
+cd android
+
+# 1) Generate a release keystore (you will choose passwords interactively)
+keytool -genkeypair -v \
+  -keystore release-key.jks \
+  -alias gamelab-release \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+# 2) Create your local signing config from template
+cp keystore.properties.example keystore.properties
+```
+
+Then edit `android/keystore.properties` with your real values:
+
+```properties
+storeFile=/absolute/path/to/android/release-key.jks
+storePassword=your_store_password
+keyAlias=gamelab-release
+keyPassword=your_key_password
+```
+
+Now build a signed release APK:
+
+```bash
+cd android
+./gradlew assembleRelease
+```
+
+Signed APK path:
+
+`android/app/build/outputs/apk/release/app-release.apk`
 
 ### Method 3: Sync Changes
 

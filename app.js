@@ -17,6 +17,7 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 5000;
 const apkOutputDir = path.join(__dirname, 'android', 'app', 'build', 'outputs', 'apk');
+const apkReleaseDir = path.join(apkOutputDir, 'release');
 
 function findLatestApkFile(baseDir) {
     if (!fs.existsSync(baseDir)) {
@@ -56,8 +57,8 @@ function findLatestApkFile(baseDir) {
     return latestApk;
 }
 
-function getLatestApkMetadata() {
-    const latestApk = findLatestApkFile(apkOutputDir);
+function getLatestReleaseApkMetadata() {
+    const latestApk = findLatestApkFile(apkReleaseDir);
     if (!latestApk) {
         return null;
     }
@@ -86,7 +87,7 @@ function formatBytes(bytes) {
 
 function formatLatestApkStatus(metadata) {
     if (!metadata) {
-        return 'Latest APK: not available yet. Build the Android app to generate one.';
+        return 'Latest release APK: not available yet. Build the Android release APK first.';
     }
 
     const updatedAt = new Date(metadata.updatedAt).toLocaleString('en-US', {
@@ -100,7 +101,7 @@ function formatLatestApkStatus(metadata) {
         hour12: false
     });
 
-    return `Latest APK: ${metadata.fileName} (${formatBytes(metadata.sizeBytes)}) updated ${updatedAt}`;
+    return `Latest release APK: ${metadata.fileName} (${formatBytes(metadata.sizeBytes)}) updated ${updatedAt}`;
 }
 
 // Middleware
@@ -347,7 +348,7 @@ app.get('/', (req, res) => {
         }
     });
 
-    const latestApkMetadata = getLatestApkMetadata();
+    const latestApkMetadata = getLatestReleaseApkMetadata();
     const latestApkStatus = formatLatestApkStatus(latestApkMetadata);
 
     // Serve the games menu page
@@ -757,7 +758,7 @@ app.get('/', (req, res) => {
                 </div>
 
                 <div class="apk-download">
-                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
+                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Release APK</a>
                     <p class="apk-status">${latestApkStatus}</p>
                 </div>
 
@@ -817,7 +818,7 @@ app.get('/logs', (req, res) => {
 
 app.get('/api/latest-apk', (req, res) => {
     try {
-        const latestApkMetadata = getLatestApkMetadata();
+        const latestApkMetadata = getLatestReleaseApkMetadata();
         if (!latestApkMetadata) {
             return res.status(404).json({ available: false });
         }
@@ -835,10 +836,10 @@ app.get('/api/latest-apk', (req, res) => {
 
 app.get('/download/latest-apk', (req, res) => {
     try {
-        const latestApk = findLatestApkFile(apkOutputDir);
+        const latestApk = findLatestApkFile(apkReleaseDir);
 
         if (!latestApk) {
-            return res.status(404).send('No APK file found. Build the Android app first to generate an APK.');
+            return res.status(404).send('No release APK file found. Build the Android release APK first.');
         }
 
         return res.download(latestApk.path, latestApk.fileName);
@@ -857,7 +858,7 @@ app.get('/api/word-library', (req, res) => {
 });
 
 app.get('/games', (req, res) => {
-    const latestApkMetadata = getLatestApkMetadata();
+    const latestApkMetadata = getLatestReleaseApkMetadata();
     const latestApkStatus = formatLatestApkStatus(latestApkMetadata);
 
     res.send(`
@@ -1135,7 +1136,7 @@ app.get('/games', (req, res) => {
                 </div>
 
                 <div class="apk-download">
-                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
+                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Release APK</a>
                     <p class="apk-status">${latestApkStatus}</p>
                 </div>
 

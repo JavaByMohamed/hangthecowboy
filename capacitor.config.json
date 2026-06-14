@@ -3,7 +3,11 @@
   "appName": "GameLab",
   "webDir": "public",
   "server": {
-    "androidScheme": "https"
+    "url": "https://gamelab-arena.onrender.com",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "gamelab-arena.onrender.com"
+    ]
   },
   "plugins": {
     "CapacitorHttp": {

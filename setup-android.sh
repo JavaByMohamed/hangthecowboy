@@ -2,7 +2,7 @@
 
 # GameLab Development Setup Script
 
-echo "🎮 GameLab Development Setup"
+echo " GameLab Development Setup"
 echo "================================"
 echo ""
 
@@ -50,4 +50,3 @@ echo "3. Start Node.js server: npm start"
 echo "4. Deploy to emulator/device: adb install app/build/outputs/apk/debug/app-debug.apk"
 echo ""
 echo "For detailed instructions, see: APK_BUILD_GUIDE.md"
-

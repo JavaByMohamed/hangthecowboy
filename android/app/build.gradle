@@ -1,5 +1,25 @@
 apply plugin: 'com.android.application'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def envSigning = [
+    storeFile    : System.getenv('ANDROID_KEYSTORE_PATH'),
+    storePassword: System.getenv('ANDROID_KEYSTORE_PASSWORD'),
+    keyAlias     : System.getenv('ANDROID_KEY_ALIAS'),
+    keyPassword  : System.getenv('ANDROID_KEY_PASSWORD')
+]
+
+def hasPropertiesSigning = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].every {
+    keystoreProperties.getProperty(it)
+}
+def hasEnvSigning = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].every {
+    envSigning[it]
+}
+
 android {
     namespace = "com.gamelab.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,12 +36,41 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasPropertiesSigning) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        } else if (hasEnvSigning) {
+            release {
+                storeFile rootProject.file(envSigning.storeFile)
+                storePassword envSigning.storePassword
+                keyAlias envSigning.keyAlias
+                keyPassword envSigning.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasPropertiesSigning || hasEnvSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
+}
+
+if (hasPropertiesSigning) {
+    logger.lifecycle('Release signing configured from android/keystore.properties')
+} else if (hasEnvSigning) {
+    logger.lifecycle('Release signing configured from environment variables')
+} else {
+    logger.lifecycle('Release signing not configured. assembleRelease will produce app-release-unsigned.apk')
 }
 
 repositories {

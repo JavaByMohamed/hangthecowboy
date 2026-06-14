@@ -7,7 +7,7 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <!-- Add your development machine's IP here if testing on physical device -->
     </domain-config>
-
+    
     <!-- All other connections must use HTTPS (production) -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">*.com</domain>

@@ -16,6 +16,92 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 5000;
+const apkOutputDir = path.join(__dirname, 'android', 'app', 'build', 'outputs', 'apk');
+
+function findLatestApkFile(baseDir) {
+    if (!fs.existsSync(baseDir)) {
+        return null;
+    }
+
+    let latestApk = null;
+    const stack = [baseDir];
+
+    while (stack.length > 0) {
+        const currentDir = stack.pop();
+        const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(currentDir, entry.name);
+
+            if (entry.isDirectory()) {
+                stack.push(fullPath);
+                continue;
+            }
+
+            if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.apk')) {
+                continue;
+            }
+
+            const fileStats = fs.statSync(fullPath);
+            if (!latestApk || fileStats.mtimeMs > latestApk.mtimeMs) {
+                latestApk = {
+                    path: fullPath,
+                    fileName: entry.name,
+                    mtimeMs: fileStats.mtimeMs
+                };
+            }
+        }
+    }
+
+    return latestApk;
+}
+
+function getLatestApkMetadata() {
+    const latestApk = findLatestApkFile(apkOutputDir);
+    if (!latestApk) {
+        return null;
+    }
+
+    const fileStats = fs.statSync(latestApk.path);
+    return {
+        fileName: latestApk.fileName,
+        sizeBytes: fileStats.size,
+        updatedAt: new Date(fileStats.mtimeMs).toISOString()
+    };
+}
+
+function formatBytes(bytes) {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+
+    const rounded = unitIndex === 0 ? value : value.toFixed(1);
+    return `${rounded} ${units[unitIndex]}`;
+}
+
+function formatLatestApkStatus(metadata) {
+    if (!metadata) {
+        return 'Latest APK: not available yet. Build the Android app to generate one.';
+    }
+
+    const updatedAt = new Date(metadata.updatedAt).toLocaleString('en-US', {
+        timeZone: 'Europe/Stockholm',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+    return `Latest APK: ${metadata.fileName} (${formatBytes(metadata.sizeBytes)}) updated ${updatedAt}`;
+}
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -261,6 +347,9 @@ app.get('/', (req, res) => {
         }
     });
 
+    const latestApkMetadata = getLatestApkMetadata();
+    const latestApkStatus = formatLatestApkStatus(latestApkMetadata);
+
     // Serve the games menu page
     res.send(`
         <!DOCTYPE html>
@@ -498,7 +587,33 @@ app.get('/', (req, res) => {
                     padding-top: 30px;
                     border-top: 1px solid #eee;
                 }
-                
+
+                .apk-download {
+                    margin-top: 10px;
+                    margin-bottom: 20px;
+                }
+
+                .apk-status {
+                    margin-top: 10px;
+                    color: #666;
+                    font-size: 14px;
+                }
+
+                .apk-download-button {
+                    display: inline-block;
+                    background: #667eea;
+                    color: #fff;
+                    text-decoration: none;
+                    padding: 12px 22px;
+                    border-radius: 999px;
+                    font-weight: 600;
+                    transition: background 0.2s ease;
+                }
+
+                .apk-download-button:hover {
+                    background: #5a6fd6;
+                }
+
                 .back-link {
                     color: #667eea;
                     text-decoration: none;
@@ -641,6 +756,11 @@ app.get('/', (req, res) => {
                     </a>
                 </div>
 
+                <div class="apk-download">
+                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
+                    <p class="apk-status">${latestApkStatus}</p>
+                </div>
+
                 <div class="footer">
                     <p style="color: #999; font-size: 14px;">
                         Made with ❤️ for gaming
@@ -695,6 +815,39 @@ app.get('/logs', (req, res) => {
     });
 });
 
+app.get('/api/latest-apk', (req, res) => {
+    try {
+        const latestApkMetadata = getLatestApkMetadata();
+        if (!latestApkMetadata) {
+            return res.status(404).json({ available: false });
+        }
+
+        return res.json({
+            available: true,
+            ...latestApkMetadata,
+            sizeLabel: formatBytes(latestApkMetadata.sizeBytes)
+        });
+    } catch (error) {
+        console.error('Error while fetching latest APK metadata:', error);
+        return res.status(500).json({ available: false, error: 'Unable to read APK metadata.' });
+    }
+});
+
+app.get('/download/latest-apk', (req, res) => {
+    try {
+        const latestApk = findLatestApkFile(apkOutputDir);
+
+        if (!latestApk) {
+            return res.status(404).send('No APK file found. Build the Android app first to generate an APK.');
+        }
+
+        return res.download(latestApk.path, latestApk.fileName);
+    } catch (error) {
+        console.error('Error while trying to download latest APK:', error);
+        return res.status(500).send('Unable to download APK right now. Please try again.');
+    }
+});
+
 // API endpoint for word library
 app.get('/api/word-library', (req, res) => {
     const words = englishWords
@@ -704,6 +857,9 @@ app.get('/api/word-library', (req, res) => {
 });
 
 app.get('/games', (req, res) => {
+    const latestApkMetadata = getLatestApkMetadata();
+    const latestApkStatus = formatLatestApkStatus(latestApkMetadata);
+
     res.send(`
         <!DOCTYPE html>
         <html>
@@ -872,6 +1028,32 @@ app.get('/games', (req, res) => {
                     padding-top: 30px;
                     border-top: 1px solid #eee;
                 }
+
+                .apk-download {
+                    margin-top: 10px;
+                    margin-bottom: 20px;
+                }
+
+                .apk-status {
+                    margin-top: 10px;
+                    color: #666;
+                    font-size: 14px;
+                }
+
+                .apk-download-button {
+                    display: inline-block;
+                    background: #667eea;
+                    color: #fff;
+                    text-decoration: none;
+                    padding: 12px 22px;
+                    border-radius: 999px;
+                    font-weight: 600;
+                    transition: background 0.2s ease;
+                }
+
+                .apk-download-button:hover {
+                    background: #5a6fd6;
+                }
                 
                 .back-link {
                     color: #667eea;
@@ -950,6 +1132,11 @@ app.get('/games', (req, res) => {
                             </div>
                         </div>
                     </a>
+                </div>
+
+                <div class="apk-download">
+                    <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
+                    <p class="apk-status">${latestApkStatus}</p>
                 </div>
 
                 <div class="footer">

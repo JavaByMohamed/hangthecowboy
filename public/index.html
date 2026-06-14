@@ -223,6 +223,32 @@
             border-top: 1px solid #eee;
         }
 
+        .apk-download {
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .apk-status {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .apk-download-button {
+            display: inline-block;
+            background: #667eea;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .apk-download-button:hover {
+            background: #5a6fd6;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 30px 20px;
@@ -354,6 +380,11 @@
             </a>
         </div>
 
+        <div class="apk-download">
+            <a href="/download/latest-apk" class="apk-download-button">Download Latest Android APK</a>
+            <p id="latest-apk-status" class="apk-status">Latest APK: checking...</p>
+        </div>
+
         <div class="footer">
             <p style="color: #999; font-size: 14px;">
                 Made with ❤️ for gaming
@@ -376,6 +407,26 @@
         };
         
         console.log('GameLab Configuration:', window.APP_CONFIG);
+
+        async function updateLatestApkStatus() {
+            const statusElement = document.getElementById('latest-apk-status');
+            if (!statusElement) return;
+
+            try {
+                const response = await fetch('/api/latest-apk', { cache: 'no-store' });
+                if (!response.ok) {
+                    statusElement.textContent = 'Latest APK: not available yet. Build the Android app to generate one.';
+                    return;
+                }
+
+                const apk = await response.json();
+                statusElement.textContent = `Latest APK: ${apk.fileName} (${apk.sizeLabel}) updated ${new Date(apk.updatedAt).toLocaleString()}`;
+            } catch (error) {
+                statusElement.textContent = 'Latest APK: unavailable right now.';
+            }
+        }
+
+        updateLatestApkStatus();
     </script>
 </body>
 </html>

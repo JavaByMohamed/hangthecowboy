@@ -18,6 +18,48 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 const apkOutputDir = path.join(__dirname, 'android', 'app', 'build', 'outputs', 'apk');
 const apkReleaseDir = path.join(apkOutputDir, 'release');
+const apkPublicDir = path.join(__dirname, 'public', 'apk');
+
+function findLatestApkInDirs(dirs) {
+    let latestApk = null;
+
+    for (const baseDir of dirs) {
+        if (!fs.existsSync(baseDir)) {
+            continue;
+        }
+
+        const stack = [baseDir];
+
+        while (stack.length > 0) {
+            const currentDir = stack.pop();
+            const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+            for (const entry of entries) {
+                const fullPath = path.join(currentDir, entry.name);
+
+                if (entry.isDirectory()) {
+                    stack.push(fullPath);
+                    continue;
+                }
+
+                if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.apk')) {
+                    continue;
+                }
+
+                const fileStats = fs.statSync(fullPath);
+                if (!latestApk || fileStats.mtimeMs > latestApk.mtimeMs) {
+                    latestApk = {
+                        path: fullPath,
+                        fileName: entry.name,
+                        mtimeMs: fileStats.mtimeMs
+                    };
+                }
+            }
+        }
+    }
+
+    return latestApk;
+}
 
 function findLatestApkFile(baseDir) {
     if (!fs.existsSync(baseDir)) {
@@ -57,8 +99,12 @@ function findLatestApkFile(baseDir) {
     return latestApk;
 }
 
+function findLatestReleaseApk() {
+    return findLatestApkInDirs([apkReleaseDir, apkPublicDir]);
+}
+
 function getLatestReleaseApkMetadata() {
-    const latestApk = findLatestApkFile(apkReleaseDir);
+    const latestApk = findLatestReleaseApk();
     if (!latestApk) {
         return null;
     }
@@ -87,7 +133,7 @@ function formatBytes(bytes) {
 
 function formatLatestApkStatus(metadata) {
     if (!metadata) {
-        return 'Latest release APK: not available yet. Build the Android release APK first.';
+        return 'Latest release APK: not available. Build locally or upload to public/apk/.';
     }
 
     const updatedAt = new Date(metadata.updatedAt).toLocaleString('en-US', {
@@ -836,10 +882,10 @@ app.get('/api/latest-apk', (req, res) => {
 
 app.get('/download/latest-apk', (req, res) => {
     try {
-        const latestApk = findLatestApkFile(apkReleaseDir);
+        const latestApk = findLatestReleaseApk();
 
         if (!latestApk) {
-            return res.status(404).send('No release APK file found. Build the Android release APK first.');
+            return res.status(404).send('No release APK file found. Build locally or upload to public/apk/. See README for instructions.');
         }
 
         return res.download(latestApk.path, latestApk.fileName);

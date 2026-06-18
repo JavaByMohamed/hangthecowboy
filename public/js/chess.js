@@ -24,6 +24,7 @@ let timeLeft = 30;
 let multiplayerGameId = null;
 let multiplayerPlayerId = null;
 let promotionCallback = null;
+let gameStartTimeout = null;
 
 // ============================================================
 //  State object helpers – every search / simulation clones this
@@ -591,6 +592,7 @@ function startSoloGame() {
     $('gamePhase').classList.remove('hidden');
     renderBoard();
     updateInfo();
+    // Only start timer for solo mode
     startTimer();
     if (playerColor === 'black') {
         setTimeout(doAIMove, 500);
@@ -609,7 +611,7 @@ function renderBoard() {
     for (let displayR = 0; displayR < 8; displayR++) {
         for (let displayC = 0; displayC < 8; displayC++) {
             const r = flipped ? 7 - displayR : displayR;
-            const c = flipped ? 7 - displayC : displayC;
+            const c = displayC; // Only flip rows, not columns
             const sq = document.createElement('div');
             sq.className = 'square ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
             sq.dataset.row = r;
@@ -722,7 +724,10 @@ function finishMove(move) {
         return;
     }
 
-    resetTimer();
+    // Only reset timer for solo mode
+    if (gameMode === 'solo') {
+        resetTimer();
+    }
 
     if (gameMode === 'multiplayer') {
         socket.emit('chess-move', {
@@ -824,10 +829,12 @@ function startTimer() {
 
 function resetTimer() {
     stopTimer();
-    // Don't start timer during AI turn in solo mode
-    if (gameMode === 'solo' && gameState.currentTurn !== playerColor) return;
-    if (gameMode === 'multiplayer' && gameState.currentTurn !== playerColor) return;
-    startTimer();
+    // Only start timer for solo mode
+    if (gameMode === 'solo') {
+        // Don't start timer during AI turn in solo mode
+        if (gameState.currentTurn !== playerColor) return;
+        startTimer();
+    }
 }
 
 function stopTimer() {
@@ -895,6 +902,7 @@ function restartGame() {
 
 function quitGame() {
     stopTimer();
+    if (gameStartTimeout) clearTimeout(gameStartTimeout);
     if (gameMode === 'multiplayer' && multiplayerGameId) {
         socket.emit('quit-game-chess', { gameId: multiplayerGameId });
     }
@@ -918,9 +926,24 @@ if (socket) {
     socket.on('chess-joined', (data) => {
         multiplayerGameId = data.gameId;
         multiplayerPlayerId = data.playerId;
+        console.log('[CHESS] Joined game:', multiplayerGameId);
+
+        // Set timeout for game to start
+        gameStartTimeout = setTimeout(() => {
+            console.error('[CHESS] Game start timeout - opponent may not have joined');
+            const waitingPhase = $('waitingPhase');
+            if (waitingPhase && !waitingPhase.classList.contains('hidden')) {
+                const msg = waitingPhase.querySelector('p') || waitingPhase;
+                if (msg) msg.textContent = 'Waiting for opponent... (Check connection)';
+            }
+        }, 10000);
     });
 
     socket.on('chess-started', (data) => {
+        // Clear timeout since game started
+        if (gameStartTimeout) clearTimeout(gameStartTimeout);
+
+        console.log('[CHESS] Game started');
         $('waitingPhase').classList.add('hidden');
         gameState = createState();
         // Sync from server if needed
@@ -931,7 +954,7 @@ if (socket) {
         $('gamePhase').classList.remove('hidden');
         renderBoard();
         updateInfo();
-        if (gameState.currentTurn === playerColor) startTimer();
+        // Don't start timer for multiplayer - only render the board
         if (typeof showChatWidget === 'function') showChatWidget(true);
     });
 
@@ -951,7 +974,7 @@ if (socket) {
         validMoves = [];
         renderBoard();
         updateInfo();
-        resetTimer();
+        // Don't use timer for multiplayer
     });
 
     socket.on('chess-game-ended', (data) => {

@@ -1,0 +1,287 @@
+/* Invitation System Styles */
+
+.invite-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 20px 0;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.invite-section h3 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 18px;
+}
+
+.invite-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.invite-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.invite-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.invite-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.invite-btn-secondary {
+    background: #28a745;
+    color: white;
+}
+
+.invite-btn-secondary:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+}
+
+.invite-btn-outline {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.invite-btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+
+/* Join by code input */
+.join-code-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+}
+
+.join-code-input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.join-code-input {
+    padding: 12px 16px;
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    width: 160px;
+    text-align: center;
+    transition: border-color 0.3s;
+}
+
+.join-code-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.join-code-input::placeholder {
+    letter-spacing: 1px;
+    text-transform: none;
+}
+
+/* Invite code display */
+.invite-code-display {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin: 20px auto;
+    max-width: 400px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.invite-code-display h3 {
+    margin: 0 0 15px 0;
+    color: #495057;
+}
+
+.invite-code-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 32px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 6px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 10px 0;
+    font-weight: bold;
+    user-select: all;
+}
+
+.invite-link-box {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 15px 0;
+    word-break: break-all;
+    font-size: 13px;
+    color: #495057;
+}
+
+.invite-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.copy-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.copy-btn-code {
+    background: #667eea;
+    color: white;
+}
+
+.copy-btn-code:hover {
+    background: #5a6fd6;
+}
+
+.copy-btn-link {
+    background: #28a745;
+    color: white;
+}
+
+.copy-btn-link:hover {
+    background: #218838;
+}
+
+.copy-btn.copied {
+    background: #20c997 !important;
+}
+
+/* Waiting for opponent with invite */
+.waiting-invite {
+    text-align: center;
+    padding: 30px;
+}
+
+.waiting-invite .spinner {
+    margin: 20px auto;
+}
+
+.waiting-invite p {
+    color: #6c757d;
+    margin: 10px 0;
+}
+
+/* Divider */
+.invite-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #adb5bd;
+    font-size: 14px;
+}
+
+.invite-divider::before,
+.invite-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #dee2e6;
+}
+
+.invite-divider span {
+    padding: 0 15px;
+}
+
+/* Mode selection with invite option */
+.mode-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.mode-card:hover {
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.mode-card-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.mode-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.mode-card-desc {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .invite-options {
+        flex-direction: column;
+    }
+    
+    .invite-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .invite-code-box {
+        font-size: 24px;
+        letter-spacing: 4px;
+        padding: 12px 20px;
+    }
+    
+    .join-code-input-group {
+        flex-direction: column;
+    }
+    
+    .join-code-input {
+        width: 100%;
+        max-width: 200px;
+    }
+}

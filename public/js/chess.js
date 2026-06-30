@@ -25,6 +25,8 @@ let multiplayerGameId = null;
 let multiplayerPlayerId = null;
 let promotionCallback = null;
 let gameStartTimeout = null;
+let isPrivateGame = false;
+let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // ============================================================
 //  State object helpers – every search / simulation clones this
@@ -566,8 +568,56 @@ function selectGameMode(mode) {
     if (mode === 'solo') {
         $('difficultyPhase').classList.remove('hidden');
     } else {
-        $('colorPhase').classList.remove('hidden');
+        $('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
     }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'chess' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            $('multiplayerOptionsPhase').classList.add('hidden');
+            $('colorPhase').classList.remove('hidden');
+        },
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            $('multiplayerOptionsPhase').classList.add('hidden');
+            $('colorPhase').classList.remove('hidden');
+        },
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (!response.success) return;
+                multiplayerGameId = response.gameId;
+                multiplayerPlayerId = socket && socket.id ? socket.id : multiplayerPlayerId;
+                playerColor = response.color || response.assignedColor || (response.game.players[0].color === 'white' ? 'black' : 'white');
+
+                if (response.game && response.game.state === 'playing') {
+                    $('waitingPhase').classList.add('hidden');
+                    $('gamePhase').classList.remove('hidden');
+                    gameState = createState();
+                    gameState.board = response.game.board;
+                    gameState.currentTurn = response.game.currentTurn;
+                    renderBoard();
+                    updateInfo();
+                    if (typeof showChatWidget === 'function') showChatWidget(true);
+                } else {
+                    $('multiplayerOptionsPhase').classList.add('hidden');
+                    $('waitingPhase').classList.remove('hidden');
+                    const waitingTitle = $('waitingTitle');
+                    if (waitingTitle) waitingTitle.textContent = `You are ${playerColor === 'white' ? '♔ White' : '♚ Black'} - Joined game!`;
+                    const waitingContent = $('waitingContent');
+                    if (waitingContent) waitingContent.innerHTML = '<p class="center-text">Waiting for game to start...</p>';
+                }
+            });
+        }
+    );
 }
 
 function selectDifficulty(diff) {
@@ -582,8 +632,19 @@ function selectColor(color) {
     if (gameMode === 'solo') {
         startSoloGame();
     } else {
-        $('waitingPhase').classList.remove('hidden');
-        socket.emit('join-game-chess', { color });
+        if (isPrivateGame && matchmakingType === 'create-private') {
+            InviteSystem.createPrivateGame({ color }, (response) => {
+                multiplayerGameId = response.gameId;
+                multiplayerPlayerId = response.playerId;
+                $('waitingPhase').classList.remove('hidden');
+                const waitingTitle = $('waitingTitle');
+                if (waitingTitle) waitingTitle.textContent = `You are ${playerColor === 'white' ? '♔ White' : '♚ Black'}`;
+                InviteSystem.renderWaitingWithCode('waitingContent', `You are ${playerColor === 'white' ? '♔ White' : '♚ Black'}`);
+            });
+        } else {
+            $('waitingPhase').classList.remove('hidden');
+            socket.emit('join-game-chess', { color });
+        }
     }
 }
 
@@ -926,6 +987,20 @@ if (socket) {
     socket.on('chess-joined', (data) => {
         multiplayerGameId = data.gameId;
         multiplayerPlayerId = data.playerId;
+        if (data.color) playerColor = data.color;
+        $('multiplayerOptionsPhase').classList.add('hidden');
+        $('colorPhase').classList.add('hidden');
+        $('waitingPhase').classList.remove('hidden');
+        const waitingTitle = $('waitingTitle');
+        if (waitingTitle) waitingTitle.textContent = `You are ${playerColor === 'white' ? '♔ White' : '♚ Black'} - Waiting for opponent...`;
+        if (isPrivateGame && matchmakingType === 'create-private' && data.game && data.game.inviteCode) {
+            InviteSystem.inviteCode = data.game.inviteCode;
+            InviteSystem.gameId = multiplayerGameId;
+            InviteSystem.renderWaitingWithCode('waitingContent', `You are ${playerColor === 'white' ? '♔ White' : '♚ Black'}`);
+        } else {
+            const waitingContent = $('waitingContent');
+            if (waitingContent) waitingContent.innerHTML = '<p class="center-text">Waiting for opponent...</p>';
+        }
         console.log('[CHESS] Joined game:', multiplayerGameId);
 
         // Set timeout for game to start
@@ -944,6 +1019,8 @@ if (socket) {
         if (gameStartTimeout) clearTimeout(gameStartTimeout);
 
         console.log('[CHESS] Game started');
+        $('multiplayerOptionsPhase').classList.add('hidden');
+        $('colorPhase').classList.add('hidden');
         $('waitingPhase').classList.add('hidden');
         gameState = createState();
         // Sync from server if needed
@@ -994,4 +1071,3 @@ if (socket) {
         showGameResult();
     });
 }
-

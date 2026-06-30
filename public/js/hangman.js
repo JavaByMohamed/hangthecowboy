@@ -50,6 +50,8 @@ let playerId = null;
 let gameState = null;
 let currentPhase = 'mode-selection';
 let multiplayerClueShown = false;
+let isPrivateGame = false;
+let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // Solo mode variables
 let soloWord = '';
@@ -215,14 +217,31 @@ socket.on('game-joined', (data) => {
     gameId = data.gameId;
     playerId = data.playerId;
     gameState = data.game;
+    if (data.assignedTeam) selectedTeam = data.assignedTeam;
     console.log('Joined game:', gameId);
     
     document.getElementById('teamSelectionPhase').classList.add('hidden');
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.remove('hidden');
     
     const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
     const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
     document.getElementById('waitingTitle').textContent = `${emoji} ${roleText} - Waiting for opponent...`;
+    if (isPrivateGame && matchmakingType === 'create-private' && gameState.inviteCode) {
+        InviteSystem.inviteCode = gameState.inviteCode;
+        InviteSystem.gameId = gameId;
+        InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} ${roleText}`);
+    } else {
+        const waitingContent = document.getElementById('waitingContent');
+        if (waitingContent) {
+            waitingContent.innerHTML = `
+                <div class="waiting-message">
+                    <div class="spinner"></div>
+                    <p>Waiting for another player to join...</p>
+                </div>
+            `;
+        }
+    }
     updatePlayersConnected();
 });
 
@@ -237,6 +256,8 @@ socket.on('game-started', (data) => {
     } else {
         showGamePhase(guessTeam);
     }
+    const connected = document.getElementById('playersConnected');
+    if (connected) connected.textContent = '';
     if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 
@@ -265,9 +286,69 @@ function selectMode(mode) {
     if (mode === 'solo') {
         startSoloMode();
     } else {
-        document.getElementById('teamSelectionPhase').classList.remove('hidden');
-        updatePlayersWaiting();
+        document.getElementById('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
     }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'hangman' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('teamSelectionPhase').classList.remove('hidden');
+            updatePlayersWaiting();
+        },
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('teamSelectionPhase').classList.remove('hidden');
+        },
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (!response.success) return;
+                gameId = response.gameId;
+                playerId = socket.id;
+                gameState = response.game;
+                selectedTeam = response.assignedTeam || (response.game.players[0].team === 'creator' ? 'guesser' : 'creator');
+
+                if (gameState && gameState.state === 'word-setup') {
+                    const wordTeam = gameState.wordTeam || 'creator';
+                    const guessTeam = wordTeam === 'creator' ? 'guesser' : 'creator';
+                    const isWordTeam = selectedTeam === wordTeam;
+                    if (isWordTeam) {
+                        showSetupPhase();
+                    } else {
+                        showGamePhase(guessTeam);
+                    }
+                    if (typeof showChatWidget === 'function') showChatWidget(true);
+                } else {
+                    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                    document.getElementById('waitingPhase').classList.remove('hidden');
+
+                    const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
+                    const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
+                    document.getElementById('waitingTitle').textContent = `${emoji} ${roleText} - Joined game!`;
+                    const waitingContent = document.getElementById('waitingContent');
+                    if (waitingContent) {
+                        waitingContent.innerHTML = `
+                            <div class="waiting-message">
+                                <div class="spinner"></div>
+                                <p>Waiting for game to start...</p>
+                            </div>
+                        `;
+                    }
+                    updatePlayersConnected();
+                }
+            });
+        }
+    );
 }
 
 // Solo mode startup
@@ -308,6 +389,23 @@ function updatePlayersConnected() {
 // Team/Role selection
 function selectTeam(team) {
     selectedTeam = team;
+    if (isPrivateGame && matchmakingType === 'create-private') {
+        InviteSystem.createPrivateGame({ team: selectedTeam }, (response) => {
+            gameId = response.gameId;
+            playerId = response.playerId;
+            gameState = response.game;
+
+            document.getElementById('teamSelectionPhase').classList.add('hidden');
+            document.getElementById('waitingPhase').classList.remove('hidden');
+
+            const emoji = selectedTeam === 'creator' ? '✍️' : '🔍';
+            const roleText = selectedTeam === 'creator' ? 'Word Creator' : 'Guesser';
+            document.getElementById('waitingTitle').textContent = `${emoji} ${roleText}`;
+            InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} ${roleText}`);
+            updatePlayersConnected();
+        });
+        return;
+    }
     socket.emit('join-game', { team: selectedTeam });
 }
 
@@ -748,4 +846,3 @@ function showGameButtons(gameEnded = false) {
     quitBtn.onclick = quitGame;
     container.appendChild(quitBtn);
 }
-

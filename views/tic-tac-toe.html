@@ -6,6 +6,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/css/tic-tac-toe.css">
     <link rel="stylesheet" href="/css/chat-widget.css">
+    <link rel="stylesheet" href="/css/invite-system.css">
 </head>
 <body>
     <div class="navbar">
@@ -25,6 +26,12 @@
             </div>
         </div>
 
+        <!-- Multiplayer Options Phase -->
+        <div class="section hidden" id="multiplayerOptionsPhase">
+            <h2>Multiplayer Mode</h2>
+            <div id="inviteOptionsContainer"></div>
+        </div>
+
         <!-- Symbol Selection Phase (for multiplayer) -->
         <div class="section hidden" id="symbolSelectionPhase">
             <h2>Phase 2: Choose Your Symbol</h2>
@@ -39,9 +46,11 @@
         <!-- Waiting Phase (for multiplayer) -->
         <div class="section hidden" id="waitingPhase">
             <h2 id="waitingTitle"></h2>
-            <div class="waiting-message">
-                <div class="spinner"></div>
-                <p>Waiting for another player to join...</p>
+            <div id="waitingContent">
+                <div class="waiting-message">
+                    <div class="spinner"></div>
+                    <p>Waiting for another player to join...</p>
+                </div>
             </div>
             <div class="players-status" id="playersConnected"></div>
         </div>
@@ -80,6 +89,7 @@
         </div>
     </div>
 
+    <script src="/js/invite-system.js"></script>
     <script src="/js/tic-tac-toe.js"></script>
     <script src="/js/chat-widget.js"></script>
 </body>

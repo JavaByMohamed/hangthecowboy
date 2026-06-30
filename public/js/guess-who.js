@@ -224,6 +224,8 @@ let gameOver = false;
 let myTurn = true;
 let gameId = null;
 let playerNum = null;
+let isPrivateGame = false;
+let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // --- MODE SELECTION ---
 
@@ -245,13 +247,49 @@ function startSolo() {
 }
 
 function startMultiplayer() {
-    if (mode === 'multiplayer') return; // prevent double-click
     mode = 'multiplayer';
-    document.getElementById('mp-status').classList.remove('hidden');
-    document.getElementById('mp-status').textContent = '⏳ Looking for opponent...';
-    // Disable buttons to prevent double-click
-    document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
-    socket.emit('gw-join');
+    initInviteSystem();
+}
+
+function initInviteSystem() {
+    const status = document.getElementById('mp-status');
+    status.classList.remove('hidden');
+    InviteSystem.init({ gameType: 'guesswho' });
+    InviteSystem.renderInviteOptions(
+        'mp-status',
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('mp-status').classList.remove('hidden');
+            document.getElementById('mp-status').textContent = '⏳ Looking for opponent...';
+            document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
+            socket.emit('gw-join');
+        },
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
+            InviteSystem.createPrivateGame({}, (response) => {
+                gameId = response.gameId;
+                document.getElementById('mp-status').classList.remove('hidden');
+                InviteSystem.renderWaitingWithCode('mp-status', 'Invite a Friend to Guess Who');
+            });
+        },
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (!response.success) {
+                    document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = false);
+                    return;
+                }
+                gameId = response.gameId;
+                document.getElementById('mp-status').classList.remove('hidden');
+                document.getElementById('mp-status').textContent = '⏳ Joined! Waiting for pick phase...';
+            });
+        }
+    );
 }
 
 function showPickScreen(gId) {
@@ -297,6 +335,8 @@ function backToMenu() {
     document.getElementById('mp-status').classList.add('hidden');
     document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = false);
     mode = null;
+    matchmakingType = null;
+    isPrivateGame = false;
     gameOver = true;
     if (typeof showChatWidget === 'function') showChatWidget(false);
 }
@@ -531,6 +571,7 @@ function showOverlay(title, msg) {
 socket.on('gw-pick', (data) => {
     showPickScreen(data.gameId);
     playerNum = data.playerNum;
+    document.getElementById('mp-status').classList.add('hidden');
     if (typeof showChatWidget === 'function') showChatWidget(true);
 });
 

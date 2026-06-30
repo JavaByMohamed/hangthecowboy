@@ -6,6 +6,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/css/draughts.css">
     <link rel="stylesheet" href="/css/chat-widget.css">
+    <link rel="stylesheet" href="/css/invite-system.css">
 </head>
 <body>
     <div class="navbar">
@@ -25,6 +26,12 @@
             </div>
         </div>
 
+        <!-- Multiplayer Options Phase -->
+        <div class="section hidden" id="multiplayerOptionsPhase">
+            <h2>Multiplayer Mode</h2>
+            <div id="inviteOptionsContainer"></div>
+        </div>
+
         <!-- Color Selection (Solo & Multiplayer) -->
         <div class="section hidden" id="colorPhase">
             <h2>Choose Your Color</h2>
@@ -39,7 +46,9 @@
         <!-- Waiting Phase (Multiplayer) -->
         <div class="section hidden" id="waitingPhase">
             <h2 id="waitingTitle">Waiting for opponent...</h2>
-            <p class="center-text">Share this page with a friend to play together!</p>
+            <div id="waitingContent">
+                <p class="center-text">Share this page with a friend to play together!</p>
+            </div>
         </div>
 
         <!-- Game Board -->
@@ -59,6 +68,7 @@
         </div>
     </div>
 
+    <script src="/js/invite-system.js"></script>
     <script src="/js/draughts.js"></script>
     <script src="/js/chat-widget.js"></script>
 </body>

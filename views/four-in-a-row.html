@@ -6,6 +6,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/css/four-in-a-row.css">
     <link rel="stylesheet" href="/css/chat-widget.css">
+    <link rel="stylesheet" href="/css/invite-system.css">
 </head>
 <body>
     <div class="navbar">
@@ -24,6 +25,12 @@
             </div>
         </div>
 
+        <!-- Multiplayer Options Phase (NEW) -->
+        <div class="section hidden" id="multiplayerOptionsPhase">
+            <h2>Multiplayer Mode</h2>
+            <div id="inviteOptionsContainer"></div>
+        </div>
+
         <!-- Color Selection Phase -->
         <div class="section hidden" id="colorSelectionPhase">
             <h2>Choose Your Color</h2>
@@ -38,9 +45,11 @@
         <!-- Waiting Phase -->
         <div class="section hidden" id="waitingPhase">
             <h2 id="waitingTitle"></h2>
-            <div class="waiting-message">
-                <div class="spinner"></div>
-                <p>Waiting for another player to join...</p>
+            <div id="waitingContent">
+                <div class="waiting-message">
+                    <div class="spinner"></div>
+                    <p>Waiting for another player to join...</p>
+                </div>
             </div>
             <div class="players-status" id="playersConnected"></div>
         </div>
@@ -68,6 +77,7 @@
         </div>
     </div>
 
+    <script src="/js/invite-system.js"></script>
     <script src="/js/four-in-a-row.js"></script>
     <script src="/js/chat-widget.js"></script>
 </body>

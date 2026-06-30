@@ -64,6 +64,8 @@ let playerNum = 0;
 let selectedCell = null;
 let gameMode = null; // 'solo' or 'multiplayer'
 let aiDifficulty = null;
+let isPrivateGame = false;
+let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // Solo game state
 let soloGame = null;
@@ -127,9 +129,70 @@ function selectMode(mode) {
     } else {
         document.getElementById('difficultySelect').classList.add('hidden');
         document.getElementById('gameModePhase').classList.add('hidden');
-        document.getElementById('waitingPhase').classList.remove('hidden');
-        socket.emit('join-game-crossword');
+        document.getElementById('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
     }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'crossword' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('waitingPhase').classList.remove('hidden');
+            const waitingTitle = document.getElementById('waitingTitle');
+            if (waitingTitle) waitingTitle.textContent = 'Waiting for opponent...';
+            const waitingContent = document.getElementById('waitingContent');
+            if (waitingContent) {
+                waitingContent.innerHTML = `<div class="waiting-message"><div class="spinner"></div><p>Waiting for another player to join...</p></div>`;
+            }
+            socket.emit('join-game-crossword');
+        },
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            InviteSystem.createPrivateGame({}, (response) => {
+                gameId = response.gameId;
+                playerId = response.playerId;
+                document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                document.getElementById('waitingPhase').classList.remove('hidden');
+                const waitingTitle = document.getElementById('waitingTitle');
+                if (waitingTitle) waitingTitle.textContent = 'Share invite with your friend';
+                InviteSystem.renderWaitingWithCode('waitingContent', 'Crossword Invite');
+            });
+        },
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (!response.success) return;
+                gameId = response.gameId;
+                playerId = socket.id;
+                playerNum = response.game.players.findIndex(p => p.id === playerId) + 1;
+                if (response.game && response.game.state === 'playing') {
+                    document.getElementById('waitingPhase').classList.add('hidden');
+                    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                    document.getElementById('gamePhase').classList.remove('hidden');
+                    buildBoard();
+                    updateMultiplayerUI(response.game);
+                    if (response.game.currentTurn === playerNum) startTurnTimer();
+                    if (typeof showChatWidget === 'function') showChatWidget(true);
+                } else {
+                    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                    document.getElementById('waitingPhase').classList.remove('hidden');
+                    const waitingTitle = document.getElementById('waitingTitle');
+                    if (waitingTitle) waitingTitle.textContent = 'Joined game!';
+                    const waitingContent = document.getElementById('waitingContent');
+                    if (waitingContent) {
+                        waitingContent.innerHTML = `<div class="waiting-message"><div class="spinner"></div><p>Waiting for game to start...</p></div>`;
+                    }
+                }
+            });
+        }
+    );
 }
 
 function startSolo(difficulty) {
@@ -384,11 +447,17 @@ function renderBoard(board, cellOwners) {
 socket.on('game-joined-crossword', (data) => {
     gameId = data.gameId;
     playerId = data.playerId;
+    if (isPrivateGame && matchmakingType === 'create-private' && data.game && data.game.inviteCode) {
+        InviteSystem.inviteCode = data.game.inviteCode;
+        InviteSystem.gameId = gameId;
+        InviteSystem.renderWaitingWithCode('waitingContent', 'Crossword Invite');
+    }
 });
 
 socket.on('game-started-crossword', (data) => {
     const game = data.game;
     playerNum = game.players.findIndex(p => p.id === playerId) + 1;
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.add('hidden');
     document.getElementById('gamePhase').classList.remove('hidden');
     buildBoard();
@@ -428,5 +497,4 @@ function updateMultiplayerUI(game) {
     indicator.className = 'turn-indicator' + (!isMyTurn ? ' opponent-turn' : '');
     renderBoard(game.board, game.cellOwners);
 }
-
 

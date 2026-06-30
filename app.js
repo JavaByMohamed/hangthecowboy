@@ -159,13 +159,27 @@ app.use(session({
     saveUninitialized: true
 }));
 
+// Utility to generate short, readable invite codes
+function generateInviteCode(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I, O, 0, 1 to avoid confusion
+    let code = '';
+    for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// Map invite codes to game IDs for all game types
+const inviteCodeToGame = {};
+
 // Game manager for multiplayer sessions
 const games = {};
 let gameCounter = 0;
 
-function createGameSession() {
+function createGameSession(isPrivate = false) {
     gameCounter++;
     const gameId = `game-${gameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     games[gameId] = {
         id: gameId,
         players: [],
@@ -174,8 +188,13 @@ function createGameSession() {
         wordTeam: null, // which team created the word
         guessedLetters: [],
         wrongGuesses: [],
-        maxLives: 6
+        maxLives: 6,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'hangman' };
+    }
     return gameId;
 }
 
@@ -183,13 +202,44 @@ function createGameSession() {
 const fourInARowGames = {};
 let fourInARowGameCounter = 0;
 
+// Quoridor game manager
+const quoridorGames = {};
+let quoridorGameCounter = 0;
+
+function createQuoridorSession(isPrivate = false) {
+    quoridorGameCounter++;
+    const gameId = `qr-${quoridorGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
+    quoridorGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting',
+        pawns: {
+            blue: { r: 0, c: 4 },
+            orange: { r: 8, c: 4 }
+        },
+        walls: [],
+        wallsRemaining: { blue: 10, orange: 10 },
+        currentTurn: 'blue',
+        winner: null,
+        gameEnded: false,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
+    };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'quoridor' };
+    }
+    return gameId;
+}
+
 // Draughts game manager
 const draughtsGames = {};
 let draughtsGameCounter = 0;
 
-function createDraughtsSession() {
+function createDraughtsSession(isPrivate = false) {
     draughtsGameCounter++;
     const gameId = `dr-${draughtsGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     const board = [];
     for (let r = 0; r < 10; r++) {
         board[r] = [];
@@ -210,14 +260,20 @@ function createDraughtsSession() {
         board: board,
         currentTurn: 'white',
         winner: null,
-        gameEnded: false
+        gameEnded: false,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'draughts' };
+    }
     return gameId;
 }
 
-function createFourInARowSession() {
+function createFourInARowSession(isPrivate = false) {
     fourInARowGameCounter++;
     const gameId = `four-${fourInARowGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     fourInARowGames[gameId] = {
         id: gameId,
         players: [],
@@ -226,8 +282,13 @@ function createFourInARowSession() {
         currentTurn: null,
         winner: null,
         isDraw: false,
-        gameEnded: false
+        gameEnded: false,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'four' };
+    }
     return gameId;
 }
 
@@ -235,9 +296,10 @@ function createFourInARowSession() {
 const ticTacToeGames = {};
 let ticTacToeGameCounter = 0;
 
-function createTicTacToeSession() {
+function createTicTacToeSession(isPrivate = false) {
     ticTacToeGameCounter++;
     const gameId = `ttt-${ticTacToeGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     ticTacToeGames[gameId] = {
         id: gameId,
         players: [],
@@ -246,8 +308,13 @@ function createTicTacToeSession() {
         currentPlayer: 'X',
         winner: null,
         isDraw: false,
-        gameEnded: false
+        gameEnded: false,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'ttt' };
+    }
     return gameId;
 }
 
@@ -290,9 +357,10 @@ const guessWhoCelebrities = [
     { name: "Post Malone", img: "🍺", traits: { gender: "male", hair: "brown", american: true, singer: true, actor: false, glasses: false, over40: false } },
 ];
 
-function createChessSession() {
+function createChessSession(isPrivate = false) {
     chessGameCounter++;
     const gameId = `chess-${chessGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     const board = [];
     const back = ['r','n','b','q','k','b','n','r'];
     for (let r = 0; r < 8; r++) {
@@ -319,16 +387,22 @@ function createChessSession() {
         halfMoveClock: 0,
         positionHistory: [],
         gameOver: false,
-        winner: null
+        winner: null,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'chess' };
+    }
     return gameId;
 }
 const CROSSWORD_SIZE = 15;
 const MAX_SKIPS = 2; // game ends after both players skip consecutively
 
-function createCrosswordSession() {
+function createCrosswordSession(isPrivate = false) {
     crosswordGameCounter++;
     const gameId = `cw-${crosswordGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
     crosswordGames[gameId] = {
         id: gameId,
         players: [],
@@ -339,8 +413,13 @@ function createCrosswordSession() {
         scores: [0, 0],
         isFirstMove: true,
         consecutiveSkips: 0,
-        winner: null
+        winner: null,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
     };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'crossword' };
+    }
     return gameId;
 }
 
@@ -1394,6 +1473,10 @@ app.get('/guess-who', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'guess-who.html'));
 });
 
+app.get('/quoridor', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'quoridor.html'));
+});
+
 // Health check endpoint — prevents hosting platforms from sleeping
 app.get('/health', (req, res) => {
     res.status(200).send('ok');
@@ -1433,8 +1516,237 @@ function gwEvaluateQuestion(q, t) {
 io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
 
+    // ==================== INVITE SYSTEM HANDLERS ====================
+    
+    // Create a private game with invite code
+    socket.on('create-private-game', (data, callback) => {
+        const { gameType, playerData } = data;
+        let gameId, game, inviteCode;
+        
+        switch (gameType) {
+            case 'hangman':
+                gameId = createGameSession(true);
+                game = games[gameId];
+                game.players.push({ id: socket.id, team: playerData.team });
+                break;
+            case 'four':
+                gameId = createFourInARowSession(true);
+                game = fourInARowGames[gameId];
+                game.players.push({ id: socket.id, color: playerData.color });
+                break;
+            case 'ttt':
+                gameId = createTicTacToeSession(true);
+                game = ticTacToeGames[gameId];
+                game.players.push({ id: socket.id, symbol: playerData.symbol });
+                break;
+            case 'chess':
+                gameId = createChessSession(true);
+                game = chessGames[gameId];
+                game.players.push({ id: socket.id, color: playerData.color });
+                break;
+            case 'draughts':
+                gameId = createDraughtsSession(true);
+                game = draughtsGames[gameId];
+                game.players.push({ id: socket.id, color: playerData.color });
+                break;
+            case 'crossword':
+                gameId = createCrosswordSession(true);
+                game = crosswordGames[gameId];
+                game.players.push({ id: socket.id });
+                break;
+            case 'quoridor':
+                gameId = createQuoridorSession(true);
+                game = quoridorGames[gameId];
+                game.players.push({ id: socket.id, color: playerData.color });
+                break;
+            case 'guesswho':
+                guessWhoGameCounter++;
+                gameId = `gw-${guessWhoGameCounter}`;
+                inviteCode = generateInviteCode();
+                guessWhoGames[gameId] = { 
+                    id: gameId, 
+                    players: [{ id: socket.id, num: 1, chosenSecret: null }], 
+                    state: 'waiting', 
+                    currentTurn: 1, 
+                    secrets: [],
+                    isPrivate: true,
+                    inviteCode: inviteCode
+                };
+                inviteCodeToGame[inviteCode] = { gameId, gameType: 'guesswho' };
+                game = guessWhoGames[gameId];
+                break;
+            default:
+                callback({ success: false, error: 'Unknown game type' });
+                return;
+        }
+        
+        socket.join(gameId);
+        callback({ 
+            success: true, 
+            gameId, 
+            inviteCode: game.inviteCode,
+            playerId: socket.id,
+            game 
+        });
+    });
+    
+    // Join a private game by invite code
+    socket.on('join-by-invite', (data, callback) => {
+        const { inviteCode, playerData } = data;
+        const upperCode = inviteCode.toUpperCase().trim();
+        
+        const mapping = inviteCodeToGame[upperCode];
+        if (!mapping) {
+            callback({ success: false, error: 'Invalid invite code' });
+            return;
+        }
+        
+        const { gameId, gameType } = mapping;
+        let game;
+        
+        switch (gameType) {
+            case 'hangman':
+                game = games[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentTeam = game.players[0].team === 'creator' ? 'guesser' : 'creator';
+                game.players.push({ id: socket.id, team: opponentTeam });
+                socket.join(gameId);
+                socket.emit('game-joined', { gameId, playerId: socket.id, game, assignedTeam: opponentTeam });
+                if (game.players.length === 2) {
+                    game.state = 'word-setup';
+                    game.wordTeam = 'creator';
+                    io.to(gameId).emit('game-started', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'four':
+                game = fourInARowGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentColor = game.players[0].color === 'red' ? 'yellow' : 'red';
+                game.players.push({ id: socket.id, color: opponentColor });
+                socket.join(gameId);
+                socket.emit('game-joined', { gameId, playerId: socket.id, game, assignedColor: opponentColor });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    game.currentTurn = game.players[0].color;
+                    io.to(gameId).emit('game-started', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'ttt':
+                game = ticTacToeGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentSymbol = game.players[0].symbol === 'X' ? 'O' : 'X';
+                game.players.push({ id: socket.id, symbol: opponentSymbol });
+                socket.join(gameId);
+                socket.emit('game-joined', { gameId, playerId: socket.id, game, assignedSymbol: opponentSymbol });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    io.to(gameId).emit('game-started', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'chess':
+                game = chessGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentChessColor = game.players[0].color === 'white' ? 'black' : 'white';
+                game.players.push({ id: socket.id, color: opponentChessColor });
+                socket.join(gameId);
+                socket.emit('chess-joined', { gameId, playerId: socket.id, color: opponentChessColor, game });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    io.to(gameId).emit('chess-started', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'draughts':
+                game = draughtsGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentDraughtsColor = game.players[0].color === 'white' ? 'black' : 'white';
+                game.players.push({ id: socket.id, color: opponentDraughtsColor });
+                socket.join(gameId);
+                socket.emit('draughts-joined', { gameId, playerId: socket.id, color: opponentDraughtsColor, game });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    io.to(gameId).emit('draughts-started', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'crossword':
+                game = crosswordGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                game.players.push({ id: socket.id });
+                socket.join(gameId);
+                socket.emit('game-joined-crossword', { gameId, playerId: socket.id, game, playerNum: 2 });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    io.to(gameId).emit('game-started-crossword', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'quoridor':
+                game = quoridorGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                const opponentQuoridorColor = game.players[0].color === 'blue' ? 'orange' : 'blue';
+                game.players.push({ id: socket.id, color: opponentQuoridorColor });
+                socket.join(gameId);
+                socket.emit('game-joined-quoridor', { gameId, playerId: socket.id, game, assignedColor: opponentQuoridorColor });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    game.currentTurn = 'blue';
+                    io.to(gameId).emit('game-started-quoridor', { game });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'guesswho':
+                game = guessWhoGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                game.players.push({ id: socket.id, num: 2, chosenSecret: null });
+                socket.join(gameId);
+                socket.emit('gw-joined', { gameId, game, playerNum: 2, celebrities: guessWhoCelebrities });
+                if (game.players.length === 2) {
+                    game.state = 'picking';
+                    io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1 });
+                    io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2 });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            default:
+                callback({ success: false, error: 'Unknown game type' });
+                return;
+        }
+        
+        callback({ success: true, gameId, gameType, game });
+    });
+    
+    // ==================== END INVITE SYSTEM HANDLERS ====================
+
     socket.on('get-waiting-count', (callback) => {
-        const waitingGames = Object.values(games).filter(g => g.state === 'waiting');
+        const waitingGames = Object.values(games).filter(g => g.state === 'waiting' && !g.isPrivate);
         callback(waitingGames.length);
     });
 
@@ -1442,10 +1754,10 @@ io.on('connection', (socket) => {
         const team = data.team;
         let gameId = null;
         
-        // Find a game waiting for a player
+        // Find a PUBLIC game waiting for a player
         for (const gId in games) {
             const game = games[gId];
-            if (game.state === 'waiting' && game.players.length === 1) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
                 const firstTeam = game.players[0].team;
                 if (firstTeam !== team) {
                     gameId = gId;
@@ -1522,7 +1834,7 @@ io.on('connection', (socket) => {
 
     // Four in a Row handlers
     socket.on('get-waiting-count-four', (callback) => {
-        const waitingGames = Object.values(fourInARowGames).filter(g => g.state === 'waiting' && g.players.length === 1);
+        const waitingGames = Object.values(fourInARowGames).filter(g => g.state === 'waiting' && g.players.length === 1 && !g.isPrivate);
         callback(waitingGames.length);
     });
 
@@ -1530,10 +1842,10 @@ io.on('connection', (socket) => {
         const color = data.color;
         let gameId = null;
         
-        // Find a game waiting for a player
+        // Find a PUBLIC game waiting for a player
         for (const gId in fourInARowGames) {
             const game = fourInARowGames[gId];
-            if (game.state === 'waiting' && game.players.length === 1) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
                 const firstColor = game.players[0].color;
                 if (firstColor !== color) {
                     gameId = gId;
@@ -1679,9 +1991,10 @@ io.on('connection', (socket) => {
         const color = data.color; // 'white' or 'black'
         let gameId = null;
 
+        // Find a PUBLIC game waiting for a player
         for (const gId in draughtsGames) {
             const game = draughtsGames[gId];
-            if (game.state === 'waiting' && game.players.length === 1) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
                 const firstColor = game.players[0].color;
                 if (firstColor !== color) {
                     gameId = gId;
@@ -1753,7 +2066,7 @@ io.on('connection', (socket) => {
 
     // Tic Tac Toe handlers
     socket.on('get-waiting-count-ttt', (callback) => {
-        const waitingGames = Object.values(ticTacToeGames).filter(g => g.state === 'waiting' && g.players.length === 1);
+        const waitingGames = Object.values(ticTacToeGames).filter(g => g.state === 'waiting' && g.players.length === 1 && !g.isPrivate);
         callback(waitingGames.length);
     });
 
@@ -1761,10 +2074,10 @@ io.on('connection', (socket) => {
         const symbol = data.symbol;
         let gameId = null;
         
-        // Find a game waiting for a player
+        // Find a PUBLIC game waiting for a player
         for (const gId in ticTacToeGames) {
             const game = ticTacToeGames[gId];
-            if (game.state === 'waiting' && game.players.length === 1) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
                 const firstSymbol = game.players[0].symbol;
                 if (firstSymbol !== symbol) {
                     gameId = gId;
@@ -1861,9 +2174,10 @@ io.on('connection', (socket) => {
     // Crossword Puzzle handlers
     socket.on('join-game-crossword', () => {
         let gameId = null;
+        // Find a PUBLIC game waiting for a player
         for (const gId in crosswordGames) {
             const game = crosswordGames[gId];
-            if (game.state === 'waiting' && game.players.length === 1) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
                 gameId = gId;
                 break;
             }
@@ -2006,9 +2320,10 @@ io.on('connection', (socket) => {
     socket.on('join-game-chess', (data) => {
         const color = data.color;
         let gameId = null;
+        // Find a PUBLIC game waiting for a player
         for (const gId in chessGames) {
             const game = chessGames[gId];
-            if (game.state === 'waiting' && game.players.length === 1 && game.players[0].color !== color) {
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate && game.players[0].color !== color) {
                 gameId = gId;
                 break;
             }
@@ -2106,8 +2421,9 @@ io.on('connection', (socket) => {
             if (guessWhoGames[gId].players.some(p => p.id === socket.id)) return;
         }
         let gameId = null;
+        // Find a PUBLIC game waiting for a player
         for (const gId in guessWhoGames) {
-            if (guessWhoGames[gId].state === 'waiting' && guessWhoGames[gId].players.length === 1) {
+            if (guessWhoGames[gId].state === 'waiting' && guessWhoGames[gId].players.length === 1 && !guessWhoGames[gId].isPrivate) {
                 gameId = gId;
                 break;
             }
@@ -2115,7 +2431,7 @@ io.on('connection', (socket) => {
         if (!gameId) {
             guessWhoGameCounter++;
             gameId = `gw-${guessWhoGameCounter}`;
-            guessWhoGames[gameId] = { id: gameId, players: [], state: 'waiting', currentTurn: 1, secrets: [] };
+            guessWhoGames[gameId] = { id: gameId, players: [], state: 'waiting', currentTurn: 1, secrets: [], isPrivate: false };
         }
         const game = guessWhoGames[gameId];
         const playerNum = game.players.length + 1;
@@ -2296,6 +2612,96 @@ io.on('connection', (socket) => {
                 }
                 delete guessWhoGames[gameId];
             }
+        }
+        for (const gameId in quoridorGames) {
+            if (quoridorGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(quoridorGames, gameId, 'opponent-quit-quoridor');
+            }
+        }
+    });
+
+    // Quoridor handlers
+    socket.on('join-game-quoridor', (data) => {
+        const color = data.color;
+        let gameId = null;
+        
+        // Find a PUBLIC game waiting for a player
+        for (const gId in quoridorGames) {
+            const game = quoridorGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
+                const firstColor = game.players[0].color;
+                if (firstColor !== color) {
+                    gameId = gId;
+                    break;
+                }
+            }
+        }
+
+        if (!gameId) {
+            gameId = createQuoridorSession();
+        }
+
+        const game = quoridorGames[gameId];
+        game.players.push({ id: socket.id, color });
+        socket.join(gameId);
+
+        socket.emit('game-joined-quoridor', { gameId, playerId: socket.id, game });
+        io.to(gameId).emit('waiting-players-quoridor', game.players.length);
+
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            game.currentTurn = 'blue';
+            io.to(gameId).emit('game-started-quoridor', { game });
+        }
+    });
+
+    socket.on('make-move-quoridor', (data) => {
+        const { gameId, row, col } = data;
+        const game = quoridorGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+
+        game.pawns[player.color] = { r: row, c: col };
+
+        // Check win
+        const goalRow = player.color === 'blue' ? 8 : 0;
+        if (row === goalRow) {
+            game.gameEnded = true;
+            game.winner = player.color;
+            io.to(gameId).emit('game-ended-quoridor', { game });
+            return;
+        }
+
+        game.currentTurn = game.currentTurn === 'blue' ? 'orange' : 'blue';
+        io.to(gameId).emit('move-made-quoridor', { game });
+    });
+
+    socket.on('place-wall-quoridor', (data) => {
+        const { gameId, row, col, orientation } = data;
+        const game = quoridorGames[gameId];
+        if (!game || game.gameEnded) return;
+
+        const player = game.players.find(p => p.id === socket.id);
+        if (!player || player.color !== game.currentTurn) return;
+        if (game.wallsRemaining[player.color] <= 0) return;
+
+        game.walls.push({ r: row, c: col, o: orientation });
+        game.wallsRemaining[player.color]--;
+        game.currentTurn = game.currentTurn === 'blue' ? 'orange' : 'blue';
+        io.to(gameId).emit('wall-placed-quoridor', { game });
+    });
+
+    socket.on('quit-game-quoridor', (data) => {
+        const { gameId } = data;
+        if (quoridorGames[gameId]) {
+            const game = quoridorGames[gameId];
+            const opponent = game.players.find(p => p.id !== socket.id);
+            if (opponent) {
+                io.to(opponent.id).emit('opponent-quit-quoridor');
+            }
+            delete quoridorGames[gameId];
         }
     });
 });

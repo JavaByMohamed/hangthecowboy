@@ -74,13 +74,74 @@ let localBoard = Array(ROWS * COLS).fill(0);
 
 // ==================== MODE SELECTION ====================
 
+let isPrivateGame = false;
+let matchmakingType = null; // 'random', 'create-private', 'join-private'
+
 function selectGameMode(mode) {
     gameMode = mode;
     document.getElementById('gameModePhase').classList.add('hidden');
-    document.getElementById('colorSelectionPhase').classList.remove('hidden');
+    
     if (mode === 'multiplayer') {
-        updatePlayersWaiting();
+        // Show multiplayer options (random vs invite)
+        document.getElementById('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
+    } else {
+        // Solo mode - go straight to color selection
+        document.getElementById('colorSelectionPhase').classList.remove('hidden');
     }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'four' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        // Random match
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('colorSelectionPhase').classList.remove('hidden');
+            updatePlayersWaiting();
+        },
+        // Create private game
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('colorSelectionPhase').classList.remove('hidden');
+        },
+        // Join by code
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (response.success) {
+                    gameId = response.gameId;
+                    playerId = socket.id;
+                    gameState = response.game;
+                    selectedColor = response.assignedColor || (response.game.players[0].color === 'red' ? 'yellow' : 'red');
+                    
+                    if (gameState && gameState.state === 'playing') {
+                        showGamePhase();
+                        startTurnTimer();
+                        if (typeof showChatWidget === 'function') showChatWidget(true);
+                    } else {
+                        document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                        document.getElementById('waitingPhase').classList.remove('hidden');
+                        
+                        const emoji = selectedColor === 'red' ? '🔴' : '🟡';
+                        document.getElementById('waitingTitle').textContent = `${emoji} ${selectedColor.toUpperCase()} - Joined game!`;
+                        document.getElementById('waitingContent').innerHTML = `
+                            <div class="waiting-message">
+                                <div class="spinner"></div>
+                                <p>Waiting for game to start...</p>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+    );
 }
 
 // ==================== SOCKET.IO (MULTIPLAYER) ====================
@@ -94,18 +155,36 @@ socket.on('game-joined', (data) => {
     gameId = data.gameId;
     playerId = data.playerId;
     gameState = data.game;
+    if (data.assignedColor) selectedColor = data.assignedColor;
     
     document.getElementById('colorSelectionPhase').classList.add('hidden');
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.remove('hidden');
     
     const emoji = selectedColor === 'red' ? '🔴' : '🟡';
     document.getElementById('waitingTitle').textContent = `${emoji} ${selectedColor.toUpperCase()} - Waiting for opponent...`;
+    
+    // Show invite code if private game
+    if (isPrivateGame && matchmakingType === 'create-private' && gameState.inviteCode) {
+        InviteSystem.inviteCode = gameState.inviteCode;
+        InviteSystem.gameId = gameId;
+        InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} ${selectedColor.toUpperCase()}`);
+    } else {
+        document.getElementById('waitingContent').innerHTML = `
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+        `;
+    }
     updatePlayersConnected();
 });
 
 socket.on('game-started', (data) => {
     gameState = data.game;
     showGamePhase();
+    const connected = document.getElementById('playersConnected');
+    if (connected) connected.textContent = '';
     startTurnTimer();
     if (typeof showChatWidget === 'function') showChatWidget(true);
 });
@@ -137,15 +216,15 @@ socket.on('opponent-disconnected', () => {
 
 function updatePlayersWaiting() {
     socket.emit('get-waiting-count-four', (count) => {
-        document.getElementById('playersWaiting').textContent = 
-            `Players waiting to join: ${count + 1}`;
+        const el = document.getElementById('playersWaiting');
+        if (el) el.textContent = `Players waiting to join: ${count + 1}`;
     });
 }
 
 function updatePlayersConnected() {
     if (gameState && gameState.players) {
-        document.getElementById('playersConnected').textContent = 
-            `Players in game: ${gameState.players.length}/2`;
+        const el = document.getElementById('playersConnected');
+        if (el) el.textContent = `Players in game: ${gameState.players.length}/2`;
     }
 }
 
@@ -156,7 +235,24 @@ function selectColor(color) {
     aiColor = color === 'red' ? 'yellow' : 'red';
 
     if (gameMode === 'multiplayer') {
-        socket.emit('join-game-four', { color: selectedColor });
+        if (isPrivateGame && matchmakingType === 'create-private') {
+            // Create private game
+            InviteSystem.createPrivateGame({ color: selectedColor }, (response) => {
+                gameId = response.gameId;
+                playerId = response.playerId;
+                gameState = response.game;
+                
+                document.getElementById('colorSelectionPhase').classList.add('hidden');
+                document.getElementById('waitingPhase').classList.remove('hidden');
+                
+                const emoji = selectedColor === 'red' ? '🔴' : '🟡';
+                document.getElementById('waitingTitle').textContent = `${emoji} ${selectedColor.toUpperCase()}`;
+                InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} ${selectedColor.toUpperCase()}`);
+            });
+        } else {
+            // Random matchmaking
+            socket.emit('join-game-four', { color: selectedColor });
+        }
     } else {
         // Solo mode: start game immediately
         startSoloGame();
@@ -447,6 +543,8 @@ function evaluateWindow(board, startR, startC, dR, dC, aiVal, humanVal) {
 
 function showGamePhase() {
     currentPhase = 'game';
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+    document.getElementById('colorSelectionPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.add('hidden');
     document.getElementById('gamePhase').classList.remove('hidden');
     createBoardUI();
@@ -642,4 +740,3 @@ function onTimerExpired() {
         }
     }
 }
-

@@ -6,6 +6,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/css/crossword.css">
     <link rel="stylesheet" href="/css/chat-widget.css">
+    <link rel="stylesheet" href="/css/invite-system.css">
 </head>
 <body>
     <div class="navbar">
@@ -37,11 +38,19 @@
 
         <!-- Waiting Phase -->
         <div class="section hidden" id="waitingPhase">
-            <h2>Waiting for opponent...</h2>
-            <div class="waiting-message">
-                <div class="spinner"></div>
-                <p>Waiting for another player to join...</p>
+            <h2 id="waitingTitle">Waiting for opponent...</h2>
+            <div id="waitingContent">
+                <div class="waiting-message">
+                    <div class="spinner"></div>
+                    <p>Waiting for another player to join...</p>
+                </div>
             </div>
+        </div>
+
+        <!-- Multiplayer Options Phase -->
+        <div class="section hidden" id="multiplayerOptionsPhase">
+            <h2>Multiplayer Mode</h2>
+            <div id="inviteOptionsContainer"></div>
         </div>
 
         <!-- Game Phase -->
@@ -78,6 +87,7 @@
         </div>
     </div>
 
+    <script src="/js/invite-system.js"></script>
     <script src="/js/crossword.js"></script>
     <script src="/js/chat-widget.js"></script>
 </body>

@@ -140,19 +140,37 @@ socket.on('game-joined', (data) => {
     gameId = data.gameId;
     playerId = data.playerId;
     gameState = data.game;
+    if (data.assignedSymbol) playerSymbol = data.assignedSymbol;
     console.log('Joined game:', gameId);
     
     document.getElementById('symbolSelectionPhase').classList.add('hidden');
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.remove('hidden');
     
     const emoji = playerSymbol === 'X' ? '❌' : '⭕';
     document.getElementById('waitingTitle').textContent = `${emoji} You are ${playerSymbol} - Waiting for opponent...`;
+    
+    // Show invite code if private game
+    if (isPrivateGame && matchmakingType === 'create-private' && gameState.inviteCode) {
+        InviteSystem.inviteCode = gameState.inviteCode;
+        InviteSystem.gameId = gameId;
+        InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} You are ${playerSymbol}`);
+    } else {
+        document.getElementById('waitingContent').innerHTML = `
+            <div class="waiting-message">
+                <div class="spinner"></div>
+                <p>Waiting for another player to join...</p>
+            </div>
+        `;
+    }
     updatePlayersConnected();
 });
 
 socket.on('game-started', (data) => {
     gameState = data.game;
     showGamePhase();
+    const connected = document.getElementById('playersConnected');
+    if (connected) connected.textContent = '';
     updateGameDisplay();
     startTurnTimer();
     if (typeof showChatWidget === 'function') showChatWidget(true);
@@ -181,6 +199,11 @@ socket.on('opponent-disconnected', () => {
     const statusEl = document.getElementById('statusDisplay');
     if (statusEl) statusEl.textContent = '⚠️ Opponent disconnected!';
 });
+
+// Invite system variables
+let isPrivateGame = false;
+let matchmakingType = null;
+
 function selectGameMode(mode) {
     gameMode = mode;
     document.getElementById('gameModePhase').classList.add('hidden');
@@ -189,17 +212,87 @@ function selectGameMode(mode) {
         // Start solo mode immediately
         startSoloGame();
     } else {
-        // Show symbol selection for multiplayer
-        document.getElementById('symbolSelectionPhase').classList.remove('hidden');
-        updatePlayersWaiting();
+        // Show multiplayer options
+        document.getElementById('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
     }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'ttt' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        // Random match
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('symbolSelectionPhase').classList.remove('hidden');
+            updatePlayersWaiting();
+        },
+        // Create private game
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('symbolSelectionPhase').classList.remove('hidden');
+        },
+        // Join by code
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (response.success) {
+                    gameId = response.gameId;
+                    playerId = socket.id;
+                    gameState = response.game;
+                    playerSymbol = response.assignedSymbol || (response.game.players[0].symbol === 'X' ? 'O' : 'X');
+                    
+                    if (gameState && gameState.state === 'playing') {
+                        showGamePhase();
+                        updateGameDisplay();
+                        startTurnTimer();
+                        if (typeof showChatWidget === 'function') showChatWidget(true);
+                    } else {
+                        document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                        document.getElementById('waitingPhase').classList.remove('hidden');
+                        
+                        const emoji = playerSymbol === 'X' ? '❌' : '⭕';
+                        document.getElementById('waitingTitle').textContent = `${emoji} You are ${playerSymbol} - Joined game!`;
+                        document.getElementById('waitingContent').innerHTML = `
+                            <div class="waiting-message">
+                                <div class="spinner"></div>
+                                <p>Waiting for game to start...</p>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+    );
 }
 
 function selectSymbol(symbol) {
     playerSymbol = symbol;
     
-    // Join multiplayer game
-    socket.emit('join-game-ttt', { symbol: playerSymbol });
+    if (isPrivateGame && matchmakingType === 'create-private') {
+        // Create private game
+        InviteSystem.createPrivateGame({ symbol: playerSymbol }, (response) => {
+            gameId = response.gameId;
+            playerId = response.playerId;
+            gameState = response.game;
+            
+            document.getElementById('symbolSelectionPhase').classList.add('hidden');
+            document.getElementById('waitingPhase').classList.remove('hidden');
+            
+            const emoji = playerSymbol === 'X' ? '❌' : '⭕';
+            document.getElementById('waitingTitle').textContent = `${emoji} You are ${playerSymbol}`;
+            InviteSystem.renderWaitingWithCode('waitingContent', `${emoji} You are ${playerSymbol}`);
+        });
+    } else {
+        // Random matchmaking
+        socket.emit('join-game-ttt', { symbol: playerSymbol });
+    }
 }
 
 function startSoloGame() {
@@ -224,6 +317,7 @@ function startSoloGame() {
 }
 
 function showGamePhase() {
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('symbolSelectionPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.add('hidden');
     document.getElementById('gamePhase').classList.remove('hidden');
@@ -512,4 +606,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-

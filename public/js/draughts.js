@@ -62,6 +62,8 @@ let selectedPiece = null;
 let validMoves = [];
 let gameOver = false;
 let gameId = null;
+let isPrivateGame = false;
+let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // Timer variables
 let turnTimer = null;
@@ -138,10 +140,25 @@ function initBoard() {
 socket.on('draughts-joined', (data) => {
     gameId = data.gameId;
     playerColor = data.color;
+    if (data.game) {
+        board = data.game.board;
+        currentTurn = data.game.currentTurn;
+    }
     document.getElementById('colorPhase').classList.add('hidden');
+    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.remove('hidden');
     document.getElementById('waitingTitle').textContent =
         `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'} - Waiting for opponent...`;
+    const waitingContent = document.getElementById('waitingContent');
+    if (waitingContent) {
+        if (isPrivateGame && matchmakingType === 'create-private' && data.game && data.game.inviteCode) {
+            InviteSystem.inviteCode = data.game.inviteCode;
+            InviteSystem.gameId = gameId;
+            InviteSystem.renderWaitingWithCode('waitingContent', `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'}`);
+        } else {
+            waitingContent.innerHTML = '<p class="center-text">Waiting for another player to join...</p>';
+        }
+    }
 });
 
 socket.on('draughts-started', (data) => {
@@ -189,7 +206,59 @@ socket.on('draughts-opponent-quit', () => {
 function selectGameMode(mode) {
     gameMode = mode;
     document.getElementById('gameModePhase').classList.add('hidden');
-    document.getElementById('colorPhase').classList.remove('hidden');
+    if (mode === 'multiplayer') {
+        document.getElementById('multiplayerOptionsPhase').classList.remove('hidden');
+        initInviteSystem();
+    } else {
+        document.getElementById('colorPhase').classList.remove('hidden');
+    }
+}
+
+function initInviteSystem() {
+    InviteSystem.init({ gameType: 'draughts' });
+    InviteSystem.renderInviteOptions(
+        'inviteOptionsContainer',
+        () => {
+            matchmakingType = 'random';
+            isPrivateGame = false;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('colorPhase').classList.remove('hidden');
+        },
+        () => {
+            matchmakingType = 'create-private';
+            isPrivateGame = true;
+            document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+            document.getElementById('colorPhase').classList.remove('hidden');
+        },
+        (code) => {
+            matchmakingType = 'join-private';
+            isPrivateGame = true;
+            InviteSystem.joinByCode(code, {}, (response) => {
+                if (!response.success) return;
+                gameId = response.gameId;
+                playerColor = response.color || response.assignedColor || (response.game.players[0].color === 'white' ? 'black' : 'white');
+                if (response.game && response.game.state === 'playing') {
+                    board = response.game.board;
+                    currentTurn = response.game.currentTurn;
+                    gameOver = false;
+                    document.getElementById('waitingPhase').classList.add('hidden');
+                    document.getElementById('gamePhase').classList.remove('hidden');
+                    document.getElementById('gameMessage').classList.add('hidden');
+                    renderBoard();
+                    updateInfo();
+                    startTurnTimer();
+                    if (typeof showChatWidget === 'function') showChatWidget(true);
+                } else {
+                    document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
+                    document.getElementById('waitingPhase').classList.remove('hidden');
+                    document.getElementById('waitingTitle').textContent =
+                        `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'} - Joined game!`;
+                    const waitingContent = document.getElementById('waitingContent');
+                    if (waitingContent) waitingContent.innerHTML = '<p class="center-text">Waiting for game to start...</p>';
+                }
+            });
+        }
+    );
 }
 
 function selectColor(color) {
@@ -198,8 +267,18 @@ function selectColor(color) {
         document.getElementById('colorPhase').classList.add('hidden');
         startGame();
     } else {
-        // Multiplayer: join via socket
-        socket.emit('join-game-draughts', { color });
+        if (isPrivateGame && matchmakingType === 'create-private') {
+            InviteSystem.createPrivateGame({ color }, (response) => {
+                gameId = response.gameId;
+                document.getElementById('colorPhase').classList.add('hidden');
+                document.getElementById('waitingPhase').classList.remove('hidden');
+                document.getElementById('waitingTitle').textContent =
+                    `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'}`;
+                InviteSystem.renderWaitingWithCode('waitingContent', `You are ${playerColor === 'white' ? '⚪ White' : '⚫ Black'}`);
+            });
+        } else {
+            socket.emit('join-game-draughts', { color });
+        }
     }
 }
 

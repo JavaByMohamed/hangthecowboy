@@ -270,6 +270,12 @@ function render() {
                 const r = row / 2, c = col / 2;
                 div.className = 'cell';
 
+                if (r === 0) {
+                    div.classList.add('goal-row-red');
+                } else if (r === 8) {
+                    div.classList.add('goal-row-blue');
+                }
+
                 // Add pawn if present
                 if (pawns.blue.r === r && pawns.blue.c === c) {
                     const pawn = document.createElement('div');

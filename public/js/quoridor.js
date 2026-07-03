@@ -447,7 +447,13 @@ function canPlaceWall(r, c, o) {
     
     // Check exact overlap
     if (walls.some(w => w.r === r && w.c === c && w.o === o)) return false;
-    
+
+    // Prevent partial overlap with a same-orientation wall.
+    // Example: an existing horizontal wall at c=3 occupies segments 3 and 4,
+    // so another horizontal wall at c=4 would illegally overlap segment 4 and
+    // visually look like a single extra segment was placed.
+    if (o === 'h' && walls.some(w => w.o === 'h' && w.r === r && Math.abs(w.c - c) === 1)) return false;
+    if (o === 'v' && walls.some(w => w.o === 'v' && w.c === c && Math.abs(w.r - r) === 1)) return false;
 
     // Check cross intersection at center point
     if (walls.some(w => w.r === r && w.c === c && w.o !== o)) return false;

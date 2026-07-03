@@ -216,10 +216,10 @@ function createQuoridorSession(isPrivate = false) {
         state: 'waiting',
         pawns: {
             blue: { r: 0, c: 4 },
-            orange: { r: 8, c: 4 }
+            red: { r: 8, c: 4 }
         },
         walls: [],
-        wallsRemaining: { blue: 10, orange: 10 },
+        wallsRemaining: { blue: 10, red: 10 },
         currentTurn: 'blue',
         winner: null,
         gameEnded: false,
@@ -1708,7 +1708,7 @@ io.on('connection', (socket) => {
                     callback({ success: false, error: 'Game not available' });
                     return;
                 }
-                const opponentQuoridorColor = game.players[0].color === 'blue' ? 'orange' : 'blue';
+                const opponentQuoridorColor = game.players[0].color === 'blue' ? 'red' : 'blue';
                 game.players.push({ id: socket.id, color: opponentQuoridorColor });
                 socket.join(gameId);
                 socket.emit('game-joined-quoridor', { gameId, playerId: socket.id, game, assignedColor: opponentQuoridorColor });
@@ -2674,7 +2674,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        game.currentTurn = game.currentTurn === 'blue' ? 'orange' : 'blue';
+        game.currentTurn = game.currentTurn === 'blue' ? 'red' : 'blue';
         io.to(gameId).emit('move-made-quoridor', { game });
     });
 
@@ -2687,9 +2687,9 @@ io.on('connection', (socket) => {
         if (!player || player.color !== game.currentTurn) return;
         if (game.wallsRemaining[player.color] <= 0) return;
 
-        game.walls.push({ r: row, c: col, o: orientation });
+        game.walls.push({ r: row, c: col, o: orientation, color: player.color });
         game.wallsRemaining[player.color]--;
-        game.currentTurn = game.currentTurn === 'blue' ? 'orange' : 'blue';
+        game.currentTurn = game.currentTurn === 'blue' ? 'red' : 'blue';
         io.to(gameId).emit('wall-placed-quoridor', { game });
     });
 

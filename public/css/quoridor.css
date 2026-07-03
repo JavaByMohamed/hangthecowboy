@@ -134,11 +134,11 @@ button:hover {
     background: #2980b9;
 }
 
-.color-orange {
+.color-red {
     background: #e67e22;
 }
 
-.color-orange:hover {
+.color-red:hover {
     background: #d35400;
 }
 
@@ -286,7 +286,7 @@ button:hover {
     grid-template-rows: repeat(17, 1fr);
     gap: 0;
     padding: 10px;
-    background: #8b4513;
+    background: #2B2D42;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
@@ -294,7 +294,7 @@ button:hover {
 .cell {
     width: min(40px, 5vw);
     height: min(40px, 5vw);
-    background: #deb887;
+    background: #1B1D34;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -318,7 +318,7 @@ button:hover {
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
-.cell.pawn-orange {
+.cell.pawn-red {
     background: #e67e22;
     border-radius: 50%;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);

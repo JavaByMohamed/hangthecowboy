@@ -6,15 +6,14 @@ let myColor = null;
 let gameId = null;
 let isMyTurn = false;
 let gameEnded = false;
-let actionMode = 'move';
-let wallOrientation = 'h';
+let pendingWallSelection = null;
 let isPrivateGame = false;
 let matchmakingType = null; // 'random' | 'create-private' | 'join-private'
 
 // Board state
-let pawns = { blue: {r:0, c:4}, orange: {r:8, c:4} };
+let pawns = { blue: {r:0, c:4}, red: {r:8, c:4} };
 let walls = [];  // Each wall: {r, c, o} - covers 2 slots
-let wallsLeft = { blue: 10, orange: 10 };
+let wallsLeft = { blue: 10, red: 10 };
 let currentTurn = 'blue';
 
 // Socket events
@@ -26,13 +25,13 @@ socket.on('game-joined-quoridor', (data) => {
     document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
     document.getElementById('waitingPhase').classList.remove('hidden');
     const waitingTitle = document.getElementById('waitingTitle');
-    if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🟠 Orange'} - Waiting for opponent...`;
+    if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🔴 Red'} - Waiting for opponent...`;
     const waitingContent = document.getElementById('waitingContent');
     if (waitingContent) {
         if (isPrivateGame && matchmakingType === 'create-private' && data.game && data.game.inviteCode) {
             InviteSystem.inviteCode = data.game.inviteCode;
             InviteSystem.gameId = data.gameId;
-            InviteSystem.renderWaitingWithCode('waitingContent', `You are ${myColor === 'blue' ? '🔵 Blue' : '🟠 Orange'}`);
+            InviteSystem.renderWaitingWithCode('waitingContent', `You are ${myColor === 'blue' ? '🔵 Blue' : '🔴 Red'}`);
         } else {
             waitingContent.innerHTML = '<div class="spinner"></div><p>Looking for another player to join</p>';
         }
@@ -77,6 +76,7 @@ function syncState(g) {
     currentTurn = g.currentTurn;
     isMyTurn = currentTurn === myColor;
     gameEnded = g.gameEnded;
+    pendingWallSelection = null;
 }
 
 // UI Functions
@@ -113,7 +113,7 @@ function initInviteSystem() {
             InviteSystem.joinByCode(code, {}, (response) => {
                 if (!response.success) return;
                 gameId = response.gameId;
-                myColor = response.assignedColor || (response.game.players[0].color === 'blue' ? 'orange' : 'blue');
+                myColor = response.assignedColor || (response.game.players[0].color === 'blue' ? 'red' : 'blue');
                 if (response.game && response.game.state === 'playing') {
                     document.getElementById('waitingPhase').classList.add('hidden');
                     document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
@@ -126,7 +126,7 @@ function initInviteSystem() {
                     document.getElementById('multiplayerOptionsPhase').classList.add('hidden');
                     document.getElementById('waitingPhase').classList.remove('hidden');
                     const waitingTitle = document.getElementById('waitingTitle');
-                    if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🟠 Orange'} - Joined game!`;
+                    if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🔴 Red'} - Joined game!`;
                     const waitingContent = document.getElementById('waitingContent');
                     if (waitingContent) waitingContent.innerHTML = '<div class="spinner"></div><p>Waiting for game to start...</p>';
                 }
@@ -148,8 +148,8 @@ function selectColor(color) {
                 gameId = response.gameId;
                 document.getElementById('waitingPhase').classList.remove('hidden');
                 const waitingTitle = document.getElementById('waitingTitle');
-                if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🟠 Orange'}`;
-                InviteSystem.renderWaitingWithCode('waitingContent', `You are ${myColor === 'blue' ? '🔵 Blue' : '🟠 Orange'}`);
+                if (waitingTitle) waitingTitle.textContent = `You are ${myColor === 'blue' ? '🔵 Blue' : '🔴 Red'}`;
+                InviteSystem.renderWaitingWithCode('waitingContent', `You are ${myColor === 'blue' ? '🔵 Blue' : '🔴 Red'}`);
             });
         } else {
             document.getElementById('waitingPhase').classList.remove('hidden');
@@ -159,29 +159,16 @@ function selectColor(color) {
 }
 
 function initSoloGame() {
-    pawns = { blue: {r:0, c:4}, orange: {r:8, c:4} };
+    pawns = { blue: {r:0, c:4}, red: {r:8, c:4} };
     walls = [];
-    wallsLeft = { blue: 10, orange: 10 };
+    wallsLeft = { blue: 10, red: 10 };
     currentTurn = 'blue';
     isMyTurn = myColor === 'blue';
     gameEnded = false;
+    pendingWallSelection = null;
     render();
     
     if (!isMyTurn) setTimeout(aiMove, 600);
-}
-
-function setMode(mode) {
-    actionMode = mode;
-    document.getElementById('moveModeBtn').classList.toggle('active', mode === 'move');
-    document.getElementById('wallModeBtn').classList.toggle('active', mode === 'wall');
-    document.getElementById('wallControls').classList.toggle('hidden', mode !== 'wall');
-    render();
-}
-
-function setOrientation(o) {
-    wallOrientation = o;
-    document.getElementById('horzBtn').classList.toggle('active', o === 'h');
-    document.getElementById('vertBtn').classList.toggle('active', o === 'v');
 }
 
 function quitGame() {
@@ -189,53 +176,63 @@ function quitGame() {
     window.location.href = '/';
 }
 
-// Calculate wall position from a slot position
-function getWallPosition(slotR, slotC) {
-    const o = wallOrientation;
-    let wallR, wallC;
-    
-    if (o === 'h') {
-        wallR = slotR;
-        wallC = Math.min(Math.max(slotC - 1, 0), 7);
-    } else {
-        wallR = Math.min(Math.max(slotR - 1, 0), 7);
-        wallC = slotC;
+function getWallSlotIndex(slotR, slotC, orientation) {
+    if (orientation === 'h') {
+        return (slotR * 2 + 1) * 17 + (slotC * 2);
     }
-    
-    return { wallR, wallC, o };
+    return (slotR * 2) * 17 + (slotC * 2 + 1);
+}
+
+function highlightWallSlot(slotR, slotC, orientation, className) {
+    const board = document.getElementById('board');
+    const idx = getWallSlotIndex(slotR, slotC, orientation);
+    if (board.children[idx]) {
+        board.children[idx].classList.add(className);
+    }
+}
+
+function isAdjacentWallSegment(a, b) {
+    if (a.o !== b.o) return false;
+
+    if (a.o === 'h') {
+        return a.r === b.r && Math.abs(a.c - b.c) === 1;
+    }
+    return a.c === b.c && Math.abs(a.r - b.r) === 1;
+}
+
+function getWallFromSegments(a, b) {
+    if (a.o === 'h') {
+        return { wallR: a.r, wallC: Math.min(a.c, b.c), o: 'h' };
+    }
+    return { wallR: Math.min(a.r, b.r), wallC: a.c, o: 'v' };
 }
 
 // Wall preview on hover
-function showWallPreview(r, c) {
-    if (!isMyTurn || gameEnded || actionMode !== 'wall') return;
+function showWallPreview(slotR, slotC, slotOrientation) {
+    if (!isMyTurn || gameEnded) return;
     if (wallsLeft[currentTurn] <= 0) return;
-    
+
     clearWallPreview();
-    
-    const { wallR, wallC, o } = getWallPosition(r, c);
-    const isValid = canPlaceWall(wallR, wallC, o);
-    const previewClass = isValid ? 'preview' : 'preview-invalid';
-    
-    // Highlight the correct wall slots based on wall position
-    const board = document.getElementById('board');
-    
-    if (o === 'h') {
-        // Horizontal wall at (wallR, wallC) covers slots at grid positions:
-        // slot1: row = wallR*2+1, col = wallC*2
-        // slot2: row = wallR*2+1, col = (wallC+1)*2
-        const slot1Idx = (wallR * 2 + 1) * 17 + (wallC * 2);
-        const slot2Idx = (wallR * 2 + 1) * 17 + ((wallC + 1) * 2);
-        if (board.children[slot1Idx]) board.children[slot1Idx].classList.add(previewClass);
-        if (board.children[slot2Idx]) board.children[slot2Idx].classList.add(previewClass);
-    } else {
-        // Vertical wall at (wallR, wallC) covers slots at grid positions:
-        // slot1: row = wallR*2, col = wallC*2+1
-        // slot2: row = (wallR+1)*2, col = wallC*2+1
-        const slot1Idx = (wallR * 2) * 17 + (wallC * 2 + 1);
-        const slot2Idx = ((wallR + 1) * 2) * 17 + (wallC * 2 + 1);
-        if (board.children[slot1Idx]) board.children[slot1Idx].classList.add(previewClass);
-        if (board.children[slot2Idx]) board.children[slot2Idx].classList.add(previewClass);
+
+    if (getWallSegmentOwner(slotR, slotC, slotOrientation) !== null) {
+        highlightWallSlot(slotR, slotC, slotOrientation, 'preview-invalid');
+        return;
     }
+
+    if (!pendingWallSelection) {
+        highlightWallSlot(slotR, slotC, slotOrientation, 'preview');
+        return;
+    }
+
+    if (pendingWallSelection.o !== slotOrientation || !isAdjacentWallSegment(pendingWallSelection, { r: slotR, c: slotC, o: slotOrientation })) {
+        highlightWallSlot(slotR, slotC, slotOrientation, 'preview-invalid');
+        return;
+    }
+
+    const { wallR, wallC, o } = getWallFromSegments(pendingWallSelection, { r: slotR, c: slotC, o: slotOrientation });
+    const previewClass = canPlaceWall(wallR, wallC, o) ? 'preview' : 'preview-invalid';
+    highlightWallSlot(pendingWallSelection.r, pendingWallSelection.c, pendingWallSelection.o, previewClass);
+    highlightWallSlot(slotR, slotC, slotOrientation, previewClass);
 }
 
 function clearWallPreview() {
@@ -245,25 +242,25 @@ function clearWallPreview() {
 }
 
 // Check if a wall segment is covered by any wall
-function isWallSegmentCovered(row, col, orientation) {
+function getWallSegmentOwner(row, col, orientation) {
     for (const w of walls) {
         if (w.o !== orientation) continue;
         if (orientation === 'h') {
             // Horizontal wall at (w.r, w.c) covers slots (w.r, w.c) and (w.r, w.c+1)
-            if (w.r === row && (w.c === col || w.c === col - 1)) return true;
+            if (w.r === row && (w.c === col || w.c === col - 1)) return w.color || null;
         } else {
             // Vertical wall at (w.r, w.c) covers slots (w.r, w.c) and (w.r+1, w.c)
-            if (w.c === col && (w.r === row || w.r === row - 1)) return true;
+            if (w.c === col && (w.r === row || w.r === row - 1)) return w.color || null;
         }
     }
-    return false;
+    return null;
 }
 
 // Board rendering
 function render() {
     const board = document.getElementById('board');
     board.innerHTML = '';
-    
+
     for (let row = 0; row < 17; row++) {
         for (let col = 0; col < 17; col++) {
             const div = document.createElement('div');
@@ -272,61 +269,70 @@ function render() {
                 // Cell
                 const r = row / 2, c = col / 2;
                 div.className = 'cell';
-                
+
                 // Add pawn if present
                 if (pawns.blue.r === r && pawns.blue.c === c) {
                     const pawn = document.createElement('div');
                     pawn.className = 'pawn blue';
                     div.appendChild(pawn);
                 }
-                if (pawns.orange.r === r && pawns.orange.c === c) {
+                if (pawns.red.r === r && pawns.red.c === c) {
                     const pawn = document.createElement('div');
-                    pawn.className = 'pawn orange';
+                    pawn.className = 'pawn red';
                     div.appendChild(pawn);
                 }
                 
                 // Highlight valid moves
-                if (isMyTurn && !gameEnded && actionMode === 'move') {
+                if (isMyTurn && !gameEnded) {
                     const validMoves = getValidMoves(pawns[myColor].r, pawns[myColor].c, myColor);
                     if (validMoves.some(m => m.r === r && m.c === c)) {
                         div.classList.add('valid-move');
                     }
                 }
-                
+
                 div.onclick = () => onCellClick(r, c);
-                
+
             } else if (row % 2 === 0 && col % 2 === 1) {
                 // Vertical wall slot (between cells horizontally)
                 div.className = 'wall-v';
                 const slotR = row / 2;
                 const slotC = (col - 1) / 2;
-                
-                if (isWallSegmentCovered(slotR, slotC, 'v')) {
+
+                const wallOwner = getWallSegmentOwner(slotR, slotC, 'v');
+                if (wallOwner !== null) {
                     div.classList.add('placed');
+                    div.classList.add(wallOwner === 'blue' ? 'placed-blue' : 'placed-red');
                 }
+                if (pendingWallSelection && pendingWallSelection.o === 'v' && pendingWallSelection.r === slotR && pendingWallSelection.c === slotC) {
+                    div.classList.add('selected');
+                }
+
                 div.onclick = () => onWallSlotClick(slotR, slotC, 'v');
-                div.onmouseenter = () => showWallPreview(slotR, slotC);
+                div.onmouseenter = () => showWallPreview(slotR, slotC, 'v');
                 div.onmouseleave = clearWallPreview;
-                
+
             } else if (row % 2 === 1 && col % 2 === 0) {
                 // Horizontal wall slot (between cells vertically)
                 div.className = 'wall-h';
                 const slotR = (row - 1) / 2;
                 const slotC = col / 2;
-                
-                if (isWallSegmentCovered(slotR, slotC, 'h')) {
+
+                const wallOwner = getWallSegmentOwner(slotR, slotC, 'h');
+                if (wallOwner !== null) {
                     div.classList.add('placed');
+                    div.classList.add(wallOwner === 'blue' ? 'placed-blue' : 'placed-red');
                 }
+                if (pendingWallSelection && pendingWallSelection.o === 'h' && pendingWallSelection.r === slotR && pendingWallSelection.c === slotC) {
+                    div.classList.add('selected');
+                }
+
                 div.onclick = () => onWallSlotClick(slotR, slotC, 'h');
-                div.onmouseenter = () => showWallPreview(slotR, slotC);
+                div.onmouseenter = () => showWallPreview(slotR, slotC, 'h');
                 div.onmouseleave = clearWallPreview;
-                
+
             } else {
                 // Corner
                 div.className = 'wall-corner';
-                const cornerR = (row - 1) / 2;
-                const cornerC = (col - 1) / 2;
-                div.onmouseenter = () => showWallPreview(cornerR, cornerC);
                 div.onmouseleave = clearWallPreview;
             }
             
@@ -336,8 +342,8 @@ function render() {
     
     // Update UI
     document.getElementById('blueWalls').textContent = `🔵 Walls: ${wallsLeft.blue}`;
-    document.getElementById('orangeWalls').textContent = `🟠 Walls: ${wallsLeft.orange}`;
-    
+    document.getElementById('redWalls').textContent = `🔴 Walls: ${wallsLeft.red}`;
+
     const indicator = document.getElementById('turnIndicator');
     if (gameEnded) {
         indicator.textContent = 'Game Over';
@@ -352,11 +358,14 @@ function render() {
 }
 
 function onCellClick(r, c) {
-    if (!isMyTurn || gameEnded || actionMode !== 'move') return;
-    
+    if (!isMyTurn || gameEnded) return;
+
     const validMoves = getValidMoves(pawns[myColor].r, pawns[myColor].c, myColor);
     if (!validMoves.some(m => m.r === r && m.c === c)) return;
-    
+
+    pendingWallSelection = null;
+    clearWallPreview();
+
     if (gameMode === 'solo') {
         pawns[myColor] = {r, c};
         
@@ -368,7 +377,7 @@ function onCellClick(r, c) {
             return;
         }
         
-        currentTurn = currentTurn === 'blue' ? 'orange' : 'blue';
+        currentTurn = currentTurn === 'blue' ? 'red' : 'blue';
         isMyTurn = false;
         render();
         setTimeout(aiMove, 600);
@@ -377,18 +386,53 @@ function onCellClick(r, c) {
     }
 }
 
-function onWallSlotClick(slotR, slotC, slotO) {
-    if (!isMyTurn || gameEnded || actionMode !== 'wall') return;
+function onWallSlotClick(slotR, slotC, slotOrientation) {
+    if (!isMyTurn || gameEnded) return;
     if (wallsLeft[currentTurn] <= 0) return;
-    
-    const { wallR, wallC, o } = getWallPosition(slotR, slotC);
-    
-    if (!canPlaceWall(wallR, wallC, o)) return;
-    
+
+    if (getWallSegmentOwner(slotR, slotC, slotOrientation) !== null) return;
+
+    const clicked = { r: slotR, c: slotC, o: slotOrientation };
+
+    // Tap again on the first selected segment to cancel.
+    if (
+        pendingWallSelection &&
+        pendingWallSelection.r === clicked.r &&
+        pendingWallSelection.c === clicked.c &&
+        pendingWallSelection.o === clicked.o
+    ) {
+        pendingWallSelection = null;
+        clearWallPreview();
+        render();
+        return;
+    }
+
+    if (!pendingWallSelection) {
+        pendingWallSelection = clicked;
+        render();
+        return;
+    }
+
+    if (pendingWallSelection.o !== clicked.o || !isAdjacentWallSegment(pendingWallSelection, clicked)) {
+        pendingWallSelection = clicked;
+        clearWallPreview();
+        render();
+        return;
+    }
+
+    const { wallR, wallC, o } = getWallFromSegments(pendingWallSelection, clicked);
+    pendingWallSelection = null;
+    clearWallPreview();
+
+    if (!canPlaceWall(wallR, wallC, o)) {
+        render();
+        return;
+    }
+
     if (gameMode === 'solo') {
-        walls.push({r: wallR, c: wallC, o});
+        walls.push({r: wallR, c: wallC, o, color: currentTurn});
         wallsLeft[currentTurn]--;
-        currentTurn = currentTurn === 'blue' ? 'orange' : 'blue';
+        currentTurn = currentTurn === 'blue' ? 'red' : 'blue';
         isMyTurn = false;
         render();
         setTimeout(aiMove, 600);
@@ -404,23 +448,17 @@ function canPlaceWall(r, c, o) {
     // Check exact overlap
     if (walls.some(w => w.r === r && w.c === c && w.o === o)) return false;
     
-    // Check adjacent overlap (walls can't overlap)
-    if (o === 'h') {
-        if (walls.some(w => w.o === 'h' && w.r === r && (w.c === c - 1 || w.c === c + 1))) return false;
-    } else {
-        if (walls.some(w => w.o === 'v' && w.c === c && (w.r === r - 1 || w.r === r + 1))) return false;
-    }
-    
+
     // Check cross intersection at center point
     if (walls.some(w => w.r === r && w.c === c && w.o !== o)) return false;
     
     // Path check - both players must still be able to reach goal
-    walls.push({r, c, o});
+    walls.push({r, c, o, color: currentTurn});
     const blueOk = canReach('blue');
-    const orangeOk = canReach('orange');
+    const redOk = canReach('red');
     walls.pop();
     
-    return blueOk && orangeOk;
+    return blueOk && redOk;
 }
 
 function canReach(color) {
@@ -468,7 +506,7 @@ function isBlocked(r1, c1, r2, c2) {
 
 function getValidMoves(r, c, forColor) {
     const moves = [];
-    const opponent = forColor === 'blue' ? 'orange' : 'blue';
+    const opponent = forColor === 'blue' ? 'red' : 'blue';
     
     for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
         const nr = r + dr, nc = c + dc;
@@ -523,7 +561,7 @@ function pathLength(startR, startC, goalRow) {
 function aiMove() {
     if (gameEnded) return;
     
-    const aiColor = myColor === 'blue' ? 'orange' : 'blue';
+    const aiColor = myColor === 'blue' ? 'red' : 'blue';
     const playerColor = myColor;
     const aiPawn = pawns[aiColor];
     const playerPawn = pawns[playerColor];
@@ -543,7 +581,7 @@ function aiMove() {
     if (wallsLeft[aiColor] > 0 && Math.random() < wallChance) {
         const bestWall = findBestWall(aiColor, playerColor);
         if (bestWall) {
-            walls.push(bestWall);
+            walls.push({ ...bestWall, color: aiColor });
             wallsLeft[aiColor]--;
             currentTurn = playerColor;
             isMyTurn = true;
@@ -615,7 +653,7 @@ function findBestWall(aiColor, playerColor) {
         for (const o of ['h', 'v']) {
             if (!canPlaceWall(pos.r, pos.c, o)) continue;
             
-            walls.push({r: pos.r, c: pos.c, o});
+            walls.push({r: pos.r, c: pos.c, o, color: aiColor});
             const newPlayerPath = pathLength(playerPawn.r, playerPawn.c, playerGoal);
             walls.pop();
             

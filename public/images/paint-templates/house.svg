@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250" width="200" height="250">
+  <!-- House outline -->
+  <polygon points="100,40 30,110 30,220 170,220 170,110" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Roof peak lines -->
+  <line x1="30" y1="110" x2="100" y2="40" stroke="#999999" stroke-width="2"/>
+  <line x1="170" y1="110" x2="100" y2="40" stroke="#999999" stroke-width="2"/>
+  <!-- Door -->
+  <rect x="85" y="160" width="30" height="60" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Door knob -->
+  <circle cx="110" cy="190" r="2" fill="#999999"/>
+  <!-- Left window -->
+  <rect x="45" y="100" width="25" height="25" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Left window cross -->
+  <line x1="57.5" y1="100" x2="57.5" y2="125" stroke="#999999" stroke-width="1"/>
+  <line x1="45" y1="112.5" x2="70" y2="112.5" stroke="#999999" stroke-width="1"/>
+  <!-- Right window -->
+  <rect x="130" y="100" width="25" height="25" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Right window cross -->
+  <line x1="142.5" y1="100" x2="142.5" y2="125" stroke="#999999" stroke-width="1"/>
+  <line x1="130" y1="112.5" x2="155" y2="112.5" stroke="#999999" stroke-width="1"/>
+</svg>

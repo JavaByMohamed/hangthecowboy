@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <!-- Apple body -->
+  <ellipse cx="100" cy="120" rx="55" ry="65" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Apple bottom dimple -->
+  <circle cx="100" cy="185" r="8" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Apple top dimple -->
+  <circle cx="100" cy="55" r="6" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Stem -->
+  <rect x="97" y="45" width="6" height="12" fill="none" stroke="#999999" stroke-width="2"/>
+  <!-- Leaf -->
+  <ellipse cx="110" cy="50" rx="10" ry="6" fill="none" stroke="#999999" stroke-width="2" transform="rotate(-30 110 50)"/>
+</svg>

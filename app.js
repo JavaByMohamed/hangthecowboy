@@ -330,6 +330,10 @@ let chessGameCounter = 0;
 const guessWhoGames = {};
 let guessWhoGameCounter = 0;
 
+// Paint Game manager
+const paintGames = {};
+let paintGameCounter = 0;
+
 const guessWhoCelebrities = [
     { name: "Taylor Swift", img: "🎤", traits: { gender: "female", hair: "blonde", american: true, singer: true, actor: false, glasses: false, over40: false } },
     { name: "Beyoncé", img: "👑", traits: { gender: "female", hair: "brown", american: true, singer: true, actor: false, glasses: false, over40: true } },
@@ -419,6 +423,25 @@ function createCrosswordSession(isPrivate = false) {
     };
     if (inviteCode) {
         inviteCodeToGame[inviteCode] = { gameId, gameType: 'crossword' };
+    }
+    return gameId;
+}
+
+function createPaintSession(isPrivate = false) {
+    paintGameCounter++;
+    const gameId = `paint-${paintGameCounter}`;
+    const inviteCode = isPrivate ? generateInviteCode() : null;
+    paintGames[gameId] = {
+        id: gameId,
+        players: [],
+        state: 'waiting',
+        picture: '',
+        canvasData: null,
+        isPrivate: isPrivate,
+        inviteCode: inviteCode
+    };
+    if (inviteCode) {
+        inviteCodeToGame[inviteCode] = { gameId, gameType: 'paint' };
     }
     return gameId;
 }
@@ -948,6 +971,18 @@ app.get('/', (req, res) => {
                             </div>
                         </div>
                     </a>
+
+                    <a href="/paint" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Paint</h2>
+                            <p>Create beautiful artwork! Paint solo or team up with friends.</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎨 Solo & 👥 Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="apk-download">
@@ -1178,6 +1213,18 @@ app.get('/games', (req, res) => {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
+                .game-card:nth-child(8) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(9) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(10) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
                 .game-card-icon {
                     font-size: 100px;
                     z-index: 1;
@@ -1227,6 +1274,41 @@ app.get('/games', (req, res) => {
                 }
                 
                 .game-card:nth-child(3) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(4) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(5) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(6) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(7) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(8) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(9) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(10) .game-type {
                     background: #e3f2fd;
                     color: #3498db;
                 }
@@ -1408,6 +1490,20 @@ app.get('/games', (req, res) => {
                             </div>
                         </div>
                     </a>
+
+                    <!-- Paint Card -->
+                    <a href="/paint" class="game-card">
+                        <div class="game-card-image">
+                            <div class="game-card-icon">🎨</div>
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Paint</h2>
+                            <p>Create beautiful artwork! Paint solo or team up.</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🎨 Solo & 👥 Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="apk-download">
@@ -1475,6 +1571,10 @@ app.get('/guess-who', (req, res) => {
 
 app.get('/quoridor', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'quoridor.html'));
+});
+
+app.get('/paint', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'paint.html'));
 });
 
 // Health check endpoint — prevents hosting platforms from sleeping
@@ -1575,9 +1675,14 @@ io.on('connection', (socket) => {
                 inviteCodeToGame[inviteCode] = { gameId, gameType: 'guesswho' };
                 game = guessWhoGames[gameId];
                 break;
+            case 'paint':
+                gameId = createPaintSession(true);
+                game = paintGames[gameId];
+                game.players.push({ id: socket.id });
+                break;
             default:
-                callback({ success: false, error: 'Unknown game type' });
-                return;
+               callback({ success: false, error: 'Unknown game type' });
+               return;
         }
         
         socket.join(gameId);
@@ -1732,6 +1837,21 @@ io.on('connection', (socket) => {
                     game.state = 'picking';
                     io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1 });
                     io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2 });
+                    delete inviteCodeToGame[upperCode];
+                }
+                break;
+            case 'paint':
+                game = paintGames[gameId];
+                if (!game || game.state !== 'waiting' || game.players.length >= 2) {
+                    callback({ success: false, error: 'Game not available' });
+                    return;
+                }
+                game.players.push({ id: socket.id });
+                socket.join(gameId);
+                socket.emit('private-game-joined', { gameId, gameType: 'paint', game });
+                if (game.players.length === 2) {
+                    game.state = 'playing';
+                    io.to(gameId).emit('paint-game-started', { gameId, game });
                     delete inviteCodeToGame[upperCode];
                 }
                 break;
@@ -2618,6 +2738,11 @@ io.on('connection', (socket) => {
                 handleDisconnect(quoridorGames, gameId, 'opponent-quit-quoridor');
             }
         }
+        for (const gameId in paintGames) {
+            if (paintGames[gameId].players.some(p => p.id === socket.id)) {
+                handleDisconnect(paintGames, gameId, 'opponent-disconnected');
+            }
+        }
     });
 
     // Quoridor handlers
@@ -2704,6 +2829,96 @@ io.on('connection', (socket) => {
             delete quoridorGames[gameId];
         }
     });
+
+    // Paint random matchmaking
+    socket.on('get-waiting-count-paint', (callback) => {
+        const waitingGames = Object.values(paintGames).filter(g => g.players.length === 1 && !g.isPrivate);
+        callback(waitingGames.length);
+    });
+
+    socket.on('join-game-paint', () => {
+        let gameId = null;
+
+        // Find a PUBLIC paint room waiting for a second player
+        for (const gId in paintGames) {
+            const game = paintGames[gId];
+            if (game.state === 'waiting' && game.players.length === 1 && !game.isPrivate) {
+                gameId = gId;
+                break;
+            }
+        }
+
+        // If no room is waiting, create one
+        if (!gameId) {
+            gameId = createPaintSession(false);
+        }
+
+        const game = paintGames[gameId];
+        game.players.push({ id: socket.id });
+        socket.join(gameId);
+
+        socket.emit('paint-game-joined', { gameId, playerId: socket.id, game });
+        io.to(gameId).emit('waiting-players-paint', game.players.length);
+
+        if (game.players.length === 2) {
+            game.state = 'playing';
+            io.to(gameId).emit('paint-game-started', { gameId, game });
+        }
+    });
+
+    // ==================== PAINT GAME HANDLERS ====================
+
+    socket.on('draw-stroke', (data) => {
+       const { gameId } = data;
+       if (!paintGames[gameId]) {
+           console.log('⚠️ Draw-stroke: Invalid game:', gameId);
+           return;
+       }
+       io.to(gameId).emit('draw-stroke', {
+           x: data.x,
+           y: data.y,
+           tool: data.tool,
+           color: data.color,
+           brushSize: data.brushSize
+       });
+    });
+
+    socket.on('draw-shape', (data) => {
+       const { gameId } = data;
+       if (!paintGames[gameId]) {
+           console.log('⚠️ Draw-shape: Invalid game:', gameId);
+           return;
+       }
+       io.to(gameId).emit('draw-shape', {
+           type: data.type,
+           x1: data.x1,
+           y1: data.y1,
+           x2: data.x2,
+           y2: data.y2,
+           centerX: data.centerX,
+           centerY: data.centerY,
+           radiusX: data.radiusX,
+           radiusY: data.radiusY,
+           color: data.color,
+           brushSize: data.brushSize
+       });
+    });
+
+    socket.on('clear-canvas', (data) => {
+       const { gameId } = data;
+       if (paintGames[gameId]) {
+           io.to(gameId).emit('clear-canvas');
+       }
+    });
+
+    socket.on('load-picture', (data) => {
+       const { gameId, picture } = data;
+       if (paintGames[gameId]) {
+           paintGames[gameId].picture = picture;
+           io.to(gameId).emit('load-picture', { picture });
+       }
+    });
+
 });
 
 server.listen(PORT, () => {

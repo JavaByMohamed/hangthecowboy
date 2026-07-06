@@ -361,6 +361,14 @@ const guessWhoCelebrities = [
     { name: "Post Malone", img: "🍺", traits: { gender: "male", hair: "brown", american: true, singer: true, actor: false, glasses: false, over40: false } },
 ];
 
+const guessWhoCategories = new Set(['celebrities', 'animals', 'countries', 'cartoons', 'sports']);
+
+function normalizeGuessWhoCategory(category) {
+    if (typeof category !== 'string') return 'celebrities';
+    const normalized = category.trim().toLowerCase();
+    return guessWhoCategories.has(normalized) ? normalized : 'celebrities';
+}
+
 function createChessSession(isPrivate = false) {
     chessGameCounter++;
     const gameId = `chess-${chessGameCounter}`;
@@ -1594,23 +1602,106 @@ process.on('unhandledRejection', (err) => {
 
 // Socket.IO event handlers
 // Guess Who question evaluator
-function gwEvaluateQuestion(q, t) {
+function gwEvaluateQuestion(q, t, category = 'celebrities') {
+    if (!t || typeof t !== 'object') {
+        return "🤔 I couldn't read that character's traits.";
+    }
+
     const lower = q.toLowerCase();
-    if (lower.includes('male') || lower.includes(' man') || lower.includes(' guy') || lower.includes(' he') || lower.includes('boy')) return t.gender === 'male' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('female') || lower.includes('woman') || lower.includes(' she') || lower.includes('girl') || lower.includes('lady')) return t.gender === 'female' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('blonde') || lower.includes('blond')) return t.hair === 'blonde' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('red hair') || lower.includes('ginger') || lower.includes('redhead')) return t.hair === 'red' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('brown hair')) return t.hair === 'brown' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('black hair')) return t.hair === 'black' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('white hair') || lower.includes('grey hair') || lower.includes('gray hair')) return t.hair === 'white' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('bald') || lower.includes('no hair')) return t.hair === 'bald' ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('american') || lower.includes('from america') || lower.includes('from the us')) return t.american ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('singer') || lower.includes('sing') || lower.includes('music')) return t.singer ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('actor') || lower.includes('actress') || lower.includes('act') || lower.includes('movie') || lower.includes('film')) return t.actor ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('glasses')) return t.glasses ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('over 40') || lower.includes('older') || lower.includes('old') || lower.includes('40')) return t.over40 ? 'Yes ✅' : 'No ❌';
-    if (lower.includes('young') || lower.includes('under 40')) return !t.over40 ? 'Yes ✅' : 'No ❌';
-    return "🤔 Try asking about: gender, hair color, American, singer, actor, glasses, or over 40.";
+
+    for (const [key, val] of Object.entries(t)) {
+        if (typeof val === 'boolean') {
+            const keyLower = key.toLowerCase();
+            if (lower.includes(keyLower) || lower.includes(key.replace(/([A-Z])/g, ' $1').toLowerCase())) {
+                return val ? 'Yes ✅' : 'No ❌';
+            }
+        }
+    }
+
+    if (category === 'celebrities') {
+        if (lower.includes('male') || lower.includes(' man') || lower.includes(' guy') || lower.includes(' he') || lower.includes('boy')) return t.gender === 'male' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('female') || lower.includes('woman') || lower.includes(' she') || lower.includes('girl') || lower.includes('lady')) return t.gender === 'female' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('blonde') || lower.includes('blond')) return t.hair === 'blonde' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('red hair') || lower.includes('ginger') || lower.includes('redhead')) return t.hair === 'red' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('brown hair')) return t.hair === 'brown' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('black hair')) return t.hair === 'black' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('white hair') || lower.includes('grey hair') || lower.includes('gray hair')) return t.hair === 'white' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('bald') || lower.includes('no hair')) return t.hair === 'bald' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('over 40') || lower.includes('older') || lower.includes('old') || lower.includes('40')) return t.over40 ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('young') || lower.includes('under 40')) return !t.over40 ? 'Yes ✅' : 'No ❌';
+        return "🤔 Try asking about: gender, hair color, American, singer, actor, glasses, or over 40.";
+    }
+
+    if (category === 'animals') {
+        if (lower.includes('fly') || lower.includes('wing')) return t.canFly ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('domestic') || lower.includes('pet') || lower.includes('house')) return t.domestic ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('meat') || lower.includes('carnivore') || lower.includes('predator')) return t.carnivore ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('water') || lower.includes('swim') || lower.includes('aquatic') || lower.includes('ocean') || lower.includes('sea')) return t.aquatic ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('big') || lower.includes('large') || lower.includes('huge')) return t.big ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('small') || lower.includes('tiny')) return !t.big ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('tail')) return t.hasTail ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('4 legs') || lower.includes('four legs')) return t.legs === 4 ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('2 legs') || lower.includes('two legs')) return t.legs === 2 ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('no legs')) return t.legs === 0 ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('land')) return t.habitat === 'land' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('air') || lower.includes('sky')) return t.habitat === 'air' ? 'Yes ✅' : 'No ❌';
+        return "🤔 Try asking about: fly, domestic/pet, carnivore/meat, aquatic/water, big, tail, legs (4/2/0), habitat (land/air/water).";
+    }
+
+    if (category === 'countries') {
+        if (lower.includes('europe')) return t.european ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('asia')) return t.continent === 'Asia' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('africa')) return t.continent === 'Africa' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('south america')) return t.continent === 'South America' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('north america')) return t.continent === 'North America' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('oceania')) return t.continent === 'Oceania' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('island')) return t.island ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('coast') || lower.includes('beach') || lower.includes('sea')) return t.coastal ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('cold') || lower.includes('snow') || lower.includes('freezing')) return t.cold ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('big') || lower.includes('large')) return t.large ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('small')) return t.population === 'small' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('english')) return t.english ? 'Yes ✅' : 'No ❌';
+        for (const color of ['red', 'blue', 'green', 'yellow', 'white', 'black', 'orange']) {
+            if (lower.includes(color)) return Array.isArray(t.flagColors) ? (t.flagColors.includes(color) ? 'Yes ✅' : 'No ❌') : 'No ❌';
+        }
+        return "🤔 Try asking about: continent, island, coastal, cold, large, English-speaking, or flag colors (red/blue/green/yellow/white/black).";
+    }
+
+    if (category === 'cartoons') {
+        if (lower.includes('male') || lower.includes(' man') || lower.includes(' he') || lower.includes(' boy') || lower.includes(' guy')) return t.gender === 'male' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('female') || lower.includes('woman') || lower.includes(' she') || lower.includes('girl')) return t.gender === 'female' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('super') || lower.includes('power')) return t.superpowers ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('animal')) return t.animal ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('villain') || lower.includes('bad') || lower.includes('evil')) return t.villain ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('child') || lower.includes('kid') || lower.includes('young')) return t.child ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('funny') || lower.includes('comedy') || lower.includes('humor')) return t.funny ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('human')) return t.human ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('disney')) return t.show === 'Disney' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('dc')) return t.show === 'DC' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('anime')) return t.show === 'Anime' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('nickelodeon') || lower.includes('nick')) return t.show === 'Nickelodeon' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('warner')) return t.show === 'Warner Bros' ? 'Yes ✅' : 'No ❌';
+        return "🤔 Try asking about: gender, superpowers, animal, villain, child, funny, human, or show (Disney/DC/Anime/Nickelodeon/Warner Bros).";
+    }
+
+    if (category === 'sports') {
+        if (lower.includes('male') || lower.includes(' man') || lower.includes(' he') || lower.includes(' guy')) return t.gender === 'male' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('female') || lower.includes('woman') || lower.includes(' she')) return t.gender === 'female' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('football') || lower.includes('soccer')) return t.sport === 'football' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('tennis')) return t.sport === 'tennis' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('basketball')) return t.sport === 'basketball' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('swimming') || lower.includes('swim')) return t.sport === 'swimming' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('athletics') || lower.includes('track') || lower.includes('sprint') || lower.includes('run')) return t.sport === 'athletics' ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('american') || lower.includes('usa') || lower.includes('us')) return t.american ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('retired') || lower.includes('retire')) return t.retired ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('olympic') || lower.includes('olympics')) return t.olympic ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('over 35') || lower.includes('35') || lower.includes('old')) return t.over35 ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('team')) return t.team ? 'Yes ✅' : 'No ❌';
+        if (lower.includes('individual') || lower.includes('solo')) return !t.team ? 'Yes ✅' : 'No ❌';
+        return "🤔 Try asking about: gender, sport (football/tennis/basketball/swimming/athletics), American, retired, Olympic, over 35, team sport.";
+    }
+
+    return "🤔 I don't understand that question. Try rephrasing!";
 }
 
 io.on('connection', (socket) => {
@@ -1663,6 +1754,7 @@ io.on('connection', (socket) => {
                 guessWhoGameCounter++;
                 gameId = `gw-${guessWhoGameCounter}`;
                 inviteCode = generateInviteCode();
+                const guessWhoCategory = normalizeGuessWhoCategory(playerData && playerData.category);
                 guessWhoGames[gameId] = { 
                     id: gameId, 
                     players: [{ id: socket.id, num: 1, chosenSecret: null }], 
@@ -1670,7 +1762,8 @@ io.on('connection', (socket) => {
                     currentTurn: 1, 
                     secrets: [],
                     isPrivate: true,
-                    inviteCode: inviteCode
+                    inviteCode: inviteCode,
+                    category: guessWhoCategory
                 };
                 inviteCodeToGame[inviteCode] = { gameId, gameType: 'guesswho' };
                 game = guessWhoGames[gameId];
@@ -1832,11 +1925,11 @@ io.on('connection', (socket) => {
                 }
                 game.players.push({ id: socket.id, num: 2, chosenSecret: null });
                 socket.join(gameId);
-                socket.emit('gw-joined', { gameId, game, playerNum: 2, celebrities: guessWhoCelebrities });
+                socket.emit('gw-joined', { gameId, game, playerNum: 2, category: game.category });
                 if (game.players.length === 2) {
                     game.state = 'picking';
-                    io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1 });
-                    io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2 });
+                    io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1, category: game.category });
+                    io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2, category: game.category });
                     delete inviteCodeToGame[upperCode];
                 }
                 break;
@@ -2535,7 +2628,8 @@ io.on('connection', (socket) => {
     });
 
     // --- GUESS WHO MULTIPLAYER ---
-    socket.on('gw-join', () => {
+    socket.on('gw-join', (data = {}) => {
+        const requestedCategory = normalizeGuessWhoCategory(data.category);
         // Prevent double-join
         for (const gId in guessWhoGames) {
             if (guessWhoGames[gId].players.some(p => p.id === socket.id)) return;
@@ -2543,7 +2637,12 @@ io.on('connection', (socket) => {
         let gameId = null;
         // Find a PUBLIC game waiting for a player
         for (const gId in guessWhoGames) {
-            if (guessWhoGames[gId].state === 'waiting' && guessWhoGames[gId].players.length === 1 && !guessWhoGames[gId].isPrivate) {
+            if (
+                guessWhoGames[gId].state === 'waiting' &&
+                guessWhoGames[gId].players.length === 1 &&
+                !guessWhoGames[gId].isPrivate &&
+                guessWhoGames[gId].category === requestedCategory
+            ) {
                 gameId = gId;
                 break;
             }
@@ -2551,7 +2650,15 @@ io.on('connection', (socket) => {
         if (!gameId) {
             guessWhoGameCounter++;
             gameId = `gw-${guessWhoGameCounter}`;
-            guessWhoGames[gameId] = { id: gameId, players: [], state: 'waiting', currentTurn: 1, secrets: [], isPrivate: false };
+            guessWhoGames[gameId] = {
+                id: gameId,
+                players: [],
+                state: 'waiting',
+                currentTurn: 1,
+                secrets: [],
+                isPrivate: false,
+                category: requestedCategory
+            };
         }
         const game = guessWhoGames[gameId];
         const playerNum = game.players.length + 1;
@@ -2561,8 +2668,8 @@ io.on('connection', (socket) => {
         if (game.players.length === 2) {
             game.state = 'picking';
             // Tell both players to pick their secret celebrity
-            io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1 });
-            io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2 });
+            io.to(game.players[0].id).emit('gw-pick', { gameId, playerNum: 1, category: game.category });
+            io.to(game.players[1].id).emit('gw-pick', { gameId, playerNum: 2, category: game.category });
         }
     });
 
@@ -2571,10 +2678,23 @@ io.on('connection', (socket) => {
         if (!game || game.state !== 'picking') return;
         const player = game.players.find(p => p.id === socket.id);
         if (!player) return;
-
-        const celeb = guessWhoCelebrities.find(c => c.name === data.name);
-        if (!celeb) return;
-        player.chosenSecret = celeb;
+        const incomingCategory = normalizeGuessWhoCategory(data.category);
+        if (incomingCategory !== game.category) return;
+        if (data.character && typeof data.character === 'object') {
+            const { name, img, traits } = data.character;
+            if (typeof name !== 'string' || !name.trim() || !traits || typeof traits !== 'object' || Array.isArray(traits)) return;
+            player.chosenSecret = {
+                name: name.trim(),
+                img: typeof img === 'string' ? img : '',
+                traits
+            };
+        } else if (game.category === 'celebrities' && typeof data.name === 'string') {
+            const celeb = guessWhoCelebrities.find(c => c.name === data.name.trim());
+            if (!celeb) return;
+            player.chosenSecret = celeb;
+        } else {
+            return;
+        }
 
         // Check if both have picked
         if (game.players[0].chosenSecret && game.players[1].chosenSecret) {
@@ -2584,11 +2704,11 @@ io.on('connection', (socket) => {
 
             // Player 1: your secret is secrets[0], you guess secrets[1] (player 2's pick)
             io.to(game.players[0].id).emit('gw-start', {
-                gameId: data.gameId, playerNum: 1, yourSecret: game.secrets[0], opponentSecret: game.secrets[1], yourTurn: true
+                gameId: data.gameId, playerNum: 1, category: game.category, yourSecret: game.secrets[0], opponentSecret: game.secrets[1], yourTurn: true
             });
             // Player 2: your secret is secrets[1], you guess secrets[0] (player 1's pick)
             io.to(game.players[1].id).emit('gw-start', {
-                gameId: data.gameId, playerNum: 2, yourSecret: game.secrets[1], opponentSecret: game.secrets[0], yourTurn: false
+                gameId: data.gameId, playerNum: 2, category: game.category, yourSecret: game.secrets[1], opponentSecret: game.secrets[0], yourTurn: false
             });
         } else {
             socket.emit('gw-waiting-pick');
@@ -2606,7 +2726,7 @@ io.on('connection', (socket) => {
         // The asker is trying to guess the opponent's secret
         // Player 1 guesses secrets[1], Player 2 guesses secrets[0]
         const targetSecret = game.secrets[playerNum === 1 ? 1 : 0];
-        const answer = gwEvaluateQuestion(data.question, targetSecret.traits);
+        const answer = gwEvaluateQuestion(data.question, targetSecret.traits, game.category);
 
         // Switch turn
         game.currentTurn = playerNum === 1 ? 2 : 1;

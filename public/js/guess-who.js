@@ -263,13 +263,13 @@ function initInviteSystem() {
             document.getElementById('mp-status').classList.remove('hidden');
             document.getElementById('mp-status').textContent = '⏳ Looking for opponent...';
             document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
-            socket.emit('gw-join');
+            socket.emit('gw-join', { category: currentCategory });
         },
         () => {
             matchmakingType = 'create-private';
             isPrivateGame = true;
             document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
-            InviteSystem.createPrivateGame({}, (response) => {
+            InviteSystem.createPrivateGame({ category: currentCategory }, (response) => {
                 gameId = response.gameId;
                 document.getElementById('mp-status').classList.remove('hidden');
                 InviteSystem.renderWaitingWithCode('mp-status', 'Invite a Friend to Guess Who');
@@ -279,7 +279,7 @@ function initInviteSystem() {
             matchmakingType = 'join-private';
             isPrivateGame = true;
             document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = true);
-            InviteSystem.joinByCode(code, {}, (response) => {
+            InviteSystem.joinByCode(code, { category: currentCategory }, (response) => {
                 if (!response.success) {
                     document.querySelectorAll('.mode-buttons button').forEach(b => b.disabled = false);
                     return;
@@ -292,8 +292,11 @@ function initInviteSystem() {
     );
 }
 
-function showPickScreen(gId) {
+function showPickScreen(gId, category = currentCategory) {
     gameId = gId;
+    if (categories[category]) {
+        selectCategory(category);
+    }
     document.getElementById('mode-select').classList.add('hidden');
     document.getElementById('game-area').classList.remove('hidden');
     document.getElementById('your-secret').style.display = 'none';
@@ -317,7 +320,7 @@ function showPickScreen(gId) {
         `;
         card.onclick = () => {
             if (confirm(`Pick ${char.name} as your secret celebrity?`)) {
-                socket.emit('gw-choose-secret', { gameId, name: char.name });
+                socket.emit('gw-choose-secret', { gameId, category: currentCategory, character: char });
                 document.getElementById('turn-indicator').textContent = '⏳ Waiting for opponent to pick...';
                 board.querySelectorAll('.char-card').forEach(c => c.style.pointerEvents = 'none');
                 card.style.border = '2px solid gold';
@@ -569,7 +572,7 @@ function showOverlay(title, msg) {
 // --- MULTIPLAYER SOCKET EVENTS ---
 
 socket.on('gw-pick', (data) => {
-    showPickScreen(data.gameId);
+    showPickScreen(data.gameId, data.category);
     playerNum = data.playerNum;
     document.getElementById('mp-status').classList.add('hidden');
     if (typeof showChatWidget === 'function') showChatWidget(true);
@@ -582,6 +585,9 @@ socket.on('gw-waiting-pick', () => {
 socket.on('gw-start', (data) => {
     gameId = data.gameId;
     playerNum = data.playerNum;
+    if (data.category && categories[data.category]) {
+        selectCategory(data.category);
+    }
     mySecret = data.yourSecret;
     secretCharacter = data.opponentSecret;
     eliminated = new Set();

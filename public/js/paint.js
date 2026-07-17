@@ -25,6 +25,8 @@ function initCanvas() {
         ctx = canvas.getContext('2d');
         console.log('✓ Canvas initialized with 2D context');
         attachCanvasEventListeners();
+        window.addEventListener('resize', resizeCanvasToDisplay);
+        window.addEventListener('orientationchange', resizeCanvasToDisplay);
         console.log('✓ Canvas event listeners attached');
     } else {
         console.error('❌ Canvas element not found!');
@@ -164,6 +166,49 @@ function getCanvasCoords(e) {
     };
 }
 
+function normalizeX(x) {
+    return canvas.width > 0 ? x / canvas.width : 0;
+}
+
+function normalizeY(y) {
+    return canvas.height > 0 ? y / canvas.height : 0;
+}
+
+function denormalizeX(normalizedX) {
+    return normalizedX * canvas.width;
+}
+
+function denormalizeY(normalizedY) {
+    return normalizedY * canvas.height;
+}
+
+function resizeCanvasToDisplay() {
+    if (!canvas || !ctx) return;
+
+    const phaseElement = document.getElementById('gamePhase');
+    if (!phaseElement || phaseElement.classList.contains('hidden')) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const targetWidth = Math.round(rect.width);
+    const targetHeight = Math.round(rect.height);
+
+    if (!targetWidth || !targetHeight) return;
+    if (canvas.width === targetWidth && canvas.height === targetHeight) return;
+
+    const snapshot = document.createElement('canvas');
+    snapshot.width = canvas.width;
+    snapshot.height = canvas.height;
+    snapshot.getContext('2d').drawImage(canvas, 0, 0);
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    ctx = canvas.getContext('2d');
+
+    if (snapshot.width > 0 && snapshot.height > 0) {
+        ctx.drawImage(snapshot, 0, 0, targetWidth, targetHeight);
+    }
+}
+
 // ==================== CANVAS EVENTS ====================
 
 function startDrawing(e) {
@@ -180,6 +225,8 @@ function startDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                normalizedX: normalizeX(coords.x),
+                normalizedY: normalizeY(coords.y),
                 tool: 'brush',
                 color: gameState.color,
                 brushSize: gameState.brushSize
@@ -192,6 +239,8 @@ function startDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                normalizedX: normalizeX(coords.x),
+                normalizedY: normalizeY(coords.y),
                 tool: 'eraser',
                 brushSize: gameState.brushSize
             });
@@ -211,6 +260,8 @@ function continueDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                normalizedX: normalizeX(coords.x),
+                normalizedY: normalizeY(coords.y),
                 tool: 'brush',
                 color: gameState.color,
                 brushSize: gameState.brushSize
@@ -223,6 +274,8 @@ function continueDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                normalizedX: normalizeX(coords.x),
+                normalizedY: normalizeY(coords.y),
                 tool: 'eraser',
                 brushSize: gameState.brushSize
             });
@@ -257,6 +310,10 @@ function endDrawing(e) {
                 y1: gameState.startY,
                 x2: coords.x,
                 y2: coords.y,
+                normalizedX1: normalizeX(gameState.startX),
+                normalizedY1: normalizeY(gameState.startY),
+                normalizedX2: normalizeX(coords.x),
+                normalizedY2: normalizeY(coords.y),
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
@@ -270,6 +327,10 @@ function endDrawing(e) {
                 centerY: gameState.startY,
                 radiusX: coords.x - gameState.startX,
                 radiusY: coords.y - gameState.startY,
+                normalizedCenterX: normalizeX(gameState.startX),
+                normalizedCenterY: normalizeY(gameState.startY),
+                normalizedRadiusX: normalizeX(coords.x - gameState.startX),
+                normalizedRadiusY: normalizeY(coords.y - gameState.startY),
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
@@ -283,6 +344,10 @@ function endDrawing(e) {
                 y1: gameState.startY,
                 x2: coords.x,
                 y2: coords.y,
+                normalizedX1: normalizeX(gameState.startX),
+                normalizedY1: normalizeY(gameState.startY),
+                normalizedX2: normalizeX(coords.x),
+                normalizedY2: normalizeY(coords.y),
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
@@ -530,36 +595,48 @@ socket.on('player-joined', (data) => {
 });
 
 socket.on('draw-stroke', (data) => {
+    const x = typeof data.normalizedX === 'number' ? denormalizeX(data.normalizedX) : data.x;
+    const y = typeof data.normalizedY === 'number' ? denormalizeY(data.normalizedY) : data.y;
+
     ctx.fillStyle = data.color;
     ctx.strokeStyle = data.color;
     ctx.lineWidth = data.brushSize;
 
     if (data.tool === 'brush') {
         ctx.beginPath();
-        ctx.arc(data.x, data.y, data.brushSize / 2, 0, Math.PI * 2);
+        ctx.arc(x, y, data.brushSize / 2, 0, Math.PI * 2);
         ctx.fill();
     } else if (data.tool === 'eraser') {
-        ctx.clearRect(data.x - data.brushSize / 2, data.y - data.brushSize / 2, data.brushSize, data.brushSize);
+        ctx.clearRect(x - data.brushSize / 2, y - data.brushSize / 2, data.brushSize, data.brushSize);
     }
 });
 
 socket.on('draw-shape', (data) => {
+    const x1 = typeof data.normalizedX1 === 'number' ? denormalizeX(data.normalizedX1) : data.x1;
+    const y1 = typeof data.normalizedY1 === 'number' ? denormalizeY(data.normalizedY1) : data.y1;
+    const x2 = typeof data.normalizedX2 === 'number' ? denormalizeX(data.normalizedX2) : data.x2;
+    const y2 = typeof data.normalizedY2 === 'number' ? denormalizeY(data.normalizedY2) : data.y2;
+    const centerX = typeof data.normalizedCenterX === 'number' ? denormalizeX(data.normalizedCenterX) : data.centerX;
+    const centerY = typeof data.normalizedCenterY === 'number' ? denormalizeY(data.normalizedCenterY) : data.centerY;
+    const radiusX = typeof data.normalizedRadiusX === 'number' ? denormalizeX(data.normalizedRadiusX) : data.radiusX;
+    const radiusY = typeof data.normalizedRadiusY === 'number' ? denormalizeY(data.normalizedRadiusY) : data.radiusY;
+
     ctx.strokeStyle = data.color;
     ctx.lineWidth = data.brushSize;
 
     if (data.type === 'line') {
         ctx.beginPath();
-        ctx.moveTo(data.x1, data.y1);
-        ctx.lineTo(data.x2, data.y2);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
     } else if (data.type === 'circle') {
         ctx.beginPath();
-        ctx.ellipse(data.centerX, data.centerY, Math.abs(data.radiusX), Math.abs(data.radiusY), 0, 0, Math.PI * 2);
+        ctx.ellipse(centerX, centerY, Math.abs(radiusX), Math.abs(radiusY), 0, 0, Math.PI * 2);
         ctx.stroke();
     } else if (data.type === 'rect') {
-        const width = data.x2 - data.x1;
-        const height = data.y2 - data.y1;
-        ctx.strokeRect(data.x1, data.y1, width, height);
+        const width = x2 - x1;
+        const height = y2 - y1;
+        ctx.strokeRect(x1, y1, width, height);
     }
 });
 
@@ -585,6 +662,9 @@ function showPhase(phase) {
         document.getElementById(p).classList.add('hidden');
     });
     document.getElementById(`${phase}Phase`).classList.remove('hidden');
+    if (phase === 'game') {
+        requestAnimationFrame(resizeCanvasToDisplay);
+    }
 }
 
 function showStatus(message, type) {

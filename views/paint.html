@@ -237,16 +237,17 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 8px;
             }
 
             .section {
-                padding: 15px;
+                padding: 10px;
             }
 
             .controls-panel {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
+                margin-bottom: 12px;
             }
 
             .control-group {
@@ -255,11 +256,17 @@
             }
 
             .canvas-wrapper {
-                padding: 6px;
+                width: 100vw;
+                margin: 10px calc(50% - 50vw) 0;
+                border-radius: 0;
+                padding: 8px;
+                box-sizing: border-box;
             }
 
             #paintCanvas {
                 width: 100%;
+                max-width: none;
+                height: min(72vh, 560px);
             }
         }
     </style>

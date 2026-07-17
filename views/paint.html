@@ -190,8 +190,12 @@
             cursor: crosshair;
             background: white;
             border-radius: 4px;
-            max-width: 100%;
+            width: 100%;
+            max-width: 800px;
             height: auto;
+            display: block;
+            margin: 0 auto;
+            touch-action: none;
         }
 
         .picture-selector {
@@ -232,6 +236,14 @@
         }
 
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
             .controls-panel {
                 flex-direction: column;
                 gap: 15px;
@@ -242,9 +254,12 @@
                 width: 100%;
             }
 
+            .canvas-wrapper {
+                padding: 6px;
+            }
+
             #paintCanvas {
-                max-width: 100%;
-                height: auto;
+                width: 100%;
             }
         }
     </style>

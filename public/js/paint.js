@@ -153,127 +153,170 @@ function drawRectangle(startX, startY, endX, endY) {
 
 function getCanvasCoords(e) {
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY;
+
     return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
     };
 }
 
 // ==================== CANVAS EVENTS ====================
 
+function startDrawing(e) {
+    gameState.isDrawing = true;
+    const coords = getCanvasCoords(e);
+    gameState.startX = coords.x;
+    gameState.startY = coords.y;
+    saveState();
+
+    if (gameState.tool === 'brush') {
+        drawBrush(coords.x, coords.y);
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-stroke', {
+                gameId,
+                x: coords.x,
+                y: coords.y,
+                tool: 'brush',
+                color: gameState.color,
+                brushSize: gameState.brushSize
+            });
+        }
+    } else if (gameState.tool === 'eraser') {
+        drawEraser(coords.x, coords.y);
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-stroke', {
+                gameId,
+                x: coords.x,
+                y: coords.y,
+                tool: 'eraser',
+                brushSize: gameState.brushSize
+            });
+        }
+    }
+}
+
+function continueDrawing(e) {
+    if (!gameState.isDrawing) return;
+
+    const coords = getCanvasCoords(e);
+
+    if (gameState.tool === 'brush') {
+        drawBrush(coords.x, coords.y);
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-stroke', {
+                gameId,
+                x: coords.x,
+                y: coords.y,
+                tool: 'brush',
+                color: gameState.color,
+                brushSize: gameState.brushSize
+            });
+        }
+    } else if (gameState.tool === 'eraser') {
+        drawEraser(coords.x, coords.y);
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-stroke', {
+                gameId,
+                x: coords.x,
+                y: coords.y,
+                tool: 'eraser',
+                brushSize: gameState.brushSize
+            });
+        }
+    } else if (gameState.tool === 'line' || gameState.tool === 'circle' || gameState.tool === 'rect') {
+        // Preview shapes while dragging
+        restoreState(gameState.history[gameState.history.length - 1]);
+
+        if (gameState.tool === 'line') {
+            drawLine(gameState.startX, gameState.startY, coords.x, coords.y);
+        } else if (gameState.tool === 'circle') {
+            drawCircle(gameState.startX, gameState.startY, coords.x - gameState.startX, coords.y - gameState.startY);
+        } else if (gameState.tool === 'rect') {
+            drawRectangle(gameState.startX, gameState.startY, coords.x, coords.y);
+        }
+    }
+}
+
+function endDrawing(e) {
+    if (!gameState.isDrawing) return;
+    gameState.isDrawing = false;
+
+    const coords = getCanvasCoords(e);
+
+    // Handle shape tools on draw end
+    if (gameState.tool === 'line') {
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-shape', {
+                gameId,
+                type: 'line',
+                x1: gameState.startX,
+                y1: gameState.startY,
+                x2: coords.x,
+                y2: coords.y,
+                color: gameState.color,
+                brushSize: gameState.brushSize
+            });
+        }
+    } else if (gameState.tool === 'circle') {
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-shape', {
+                gameId,
+                type: 'circle',
+                centerX: gameState.startX,
+                centerY: gameState.startY,
+                radiusX: coords.x - gameState.startX,
+                radiusY: coords.y - gameState.startY,
+                color: gameState.color,
+                brushSize: gameState.brushSize
+            });
+        }
+    } else if (gameState.tool === 'rect') {
+        if (gameMode === 'multiplayer' && gameId) {
+            socket.emit('draw-shape', {
+                gameId,
+                type: 'rect',
+                x1: gameState.startX,
+                y1: gameState.startY,
+                x2: coords.x,
+                y2: coords.y,
+                color: gameState.color,
+                brushSize: gameState.brushSize
+            });
+        }
+    }
+}
+
 function attachCanvasEventListeners() {
     if (!canvas) return; // Safety check
-    
-    canvas.addEventListener('mousedown', (e) => {
-        gameState.isDrawing = true;
-        const coords = getCanvasCoords(e);
-        gameState.startX = coords.x;
-        gameState.startY = coords.y;
-        saveState();
 
-        if (gameState.tool === 'brush') {
-            drawBrush(coords.x, coords.y);
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-stroke', {
-                    gameId,
-                    x: coords.x,
-                    y: coords.y,
-                    tool: 'brush',
-                    color: gameState.color,
-                    brushSize: gameState.brushSize
-                });
-            }
-        }
+    canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        canvas.setPointerCapture?.(e.pointerId);
+        startDrawing(e);
     });
 
-    canvas.addEventListener('mousemove', (e) => {
-        if (!gameState.isDrawing) return;
-
-        const coords = getCanvasCoords(e);
-
-        if (gameState.tool === 'brush') {
-            drawBrush(coords.x, coords.y);
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-stroke', {
-                    gameId,
-                    x: coords.x,
-                    y: coords.y,
-                    tool: 'brush',
-                    color: gameState.color,
-                    brushSize: gameState.brushSize
-                });
-            }
-        } else if (gameState.tool === 'eraser') {
-            drawEraser(coords.x, coords.y);
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-stroke', {
-                    gameId,
-                    x: coords.x,
-                    y: coords.y,
-                    tool: 'eraser',
-                    brushSize: gameState.brushSize
-                });
-            }
-        } else if (gameState.tool === 'line' || gameState.tool === 'circle' || gameState.tool === 'rect') {
-            // Preview shapes while dragging
-            restoreState(gameState.history[gameState.history.length - 1]);
-
-            if (gameState.tool === 'line') {
-                drawLine(gameState.startX, gameState.startY, coords.x, coords.y);
-            } else if (gameState.tool === 'circle') {
-                drawCircle(gameState.startX, gameState.startY, coords.x - gameState.startX, coords.y - gameState.startY);
-            } else if (gameState.tool === 'rect') {
-                drawRectangle(gameState.startX, gameState.startY, coords.x, coords.y);
-            }
-        }
+    canvas.addEventListener('pointermove', (e) => {
+        e.preventDefault();
+        continueDrawing(e);
     });
 
-    canvas.addEventListener('mouseup', (e) => {
-        if (!gameState.isDrawing) return;
-        gameState.isDrawing = false;
+    canvas.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        endDrawing(e);
+    });
 
-        const coords = getCanvasCoords(e);
+    canvas.addEventListener('pointercancel', (e) => {
+        e.preventDefault();
+        endDrawing(e);
+    });
 
-        // Handle shape tools on mouse up
-        if (gameState.tool === 'line') {
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-shape', {
-                    gameId,
-                    type: 'line',
-                    x1: gameState.startX,
-                    y1: gameState.startY,
-                    x2: coords.x,
-                    y2: coords.y,
-                    color: gameState.color,
-                    brushSize: gameState.brushSize
-                });
-            }
-        } else if (gameState.tool === 'circle') {
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-shape', {
-                    gameId,
-                    type: 'circle',
-                    centerX: gameState.startX,
-                    centerY: gameState.startY,
-                    radiusX: coords.x - gameState.startX,
-                    radiusY: coords.y - gameState.startY,
-                    color: gameState.color,
-                    brushSize: gameState.brushSize
-                });
-            }
-        } else if (gameState.tool === 'rect') {
-            if (gameMode === 'multiplayer' && gameId) {
-                socket.emit('draw-shape', {
-                    gameId,
-                    type: 'rect',
-                    x1: gameState.startX,
-                    y1: gameState.startY,
-                    x2: coords.x,
-                    y2: coords.y,
-                    color: gameState.color,
-                    brushSize: gameState.brushSize
-                });
-            }
+    canvas.addEventListener('pointerleave', (e) => {
+        if (gameState.isDrawing) {
+            endDrawing(e);
         }
     });
 }

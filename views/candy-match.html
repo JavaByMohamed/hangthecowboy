@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Match</title>
+    <link rel="stylesheet" href="/css/candy-match.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="container">
+        <h1>🍬 Candy Match</h1>
+        <p class="subtitle">Swap candies, match 3+, trigger cascades, and hit the target score.</p>
+
+        <div class="stats">
+            <div class="stat"><span>Score</span><strong id="score">0</strong></div>
+            <div class="stat"><span>Target</span><strong id="target">5000</strong></div>
+            <div class="stat"><span>Moves</span><strong id="moves">30</strong></div>
+            <div class="stat"><span>Best Combo</span><strong id="combo">x1</strong></div>
+        </div>
+
+        <div class="actions">
+            <button id="newGameBtn">New Game</button>
+            <button id="hintBtn">Hint</button>
+            <button id="shuffleBtn">Shuffle</button>
+        </div>
+
+        <div id="message" class="message">Make your first swap.</div>
+        <div id="board" class="board" aria-label="Candy Match board"></div>
+
+        <div id="overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 id="overlayTitle"></h2>
+                <p id="overlayMessage"></p>
+                <button id="playAgainBtn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/candy-match.js"></script>
+</body>
+</html>

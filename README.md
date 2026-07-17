@@ -7,6 +7,7 @@ A multiplayer game platform built with Node.js, Express, and Socket.IO featuring
 - **Tic Tac Toe** – Classic 3x3 grid game
 - **Draughts** – Checkers on a 10x10 board
 - **Crossword Puzzle** – Build words together on a shared board
+- **Candy Match** – Match-3 puzzle with cascades and combo scoring
 
 ## 🌐 Play Online
 

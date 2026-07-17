@@ -654,6 +654,30 @@ app.get('/', (req, res) => {
                     height: 435px;
                 }
                 
+                .game-card:nth-child(9) .game-card-image {
+                    background-image: url('/images/');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
+                .game-card:nth-child(10) .game-card-image {
+                    background-image: url('/images/');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
+                .game-card:nth-child(11) .game-card-image {
+                    background-image: url('/images/');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    height: 435px;
+                }
+                
                 .game-card:nth-child(1) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
@@ -683,6 +707,18 @@ app.get('/', (req, res) => {
                 }
                 
                 .game-card:nth-child(8) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(9) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(10) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
+                .game-card:nth-child(11) .game-card-content {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
@@ -980,6 +1016,7 @@ app.get('/', (req, res) => {
                         </div>
                     </a>
 
+                    <!-- Paint Card -->
                     <a href="/paint" class="game-card">
                         <div class="game-card-image">
                         </div>
@@ -988,6 +1025,19 @@ app.get('/', (req, res) => {
                             <p>Create beautiful artwork! Paint solo or team up with friends.</p>
                             <div style="margin-top: auto;">
                                 <span class="game-type">🎨 Solo & 👥 Multiplayer</span>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <!-- Candy Match Card -->
+                    <a href="/candy-match" class="game-card">
+                        <div class="game-card-image">
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Candy Match</h2>
+                            <p>Swap candies, match 3+, and chain huge cascades!</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🍬 Solo</span>
                             </div>
                         </div>
                     </a>
@@ -1233,6 +1283,10 @@ app.get('/games', (req, res) => {
                     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
                 }
                 
+                .game-card:nth-child(11) .game-card-content {
+                    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4));
+                }
+                
                 .game-card-icon {
                     font-size: 100px;
                     z-index: 1;
@@ -1317,6 +1371,11 @@ app.get('/games', (req, res) => {
                 }
                 
                 .game-card:nth-child(10) .game-type {
+                    background: #e3f2fd;
+                    color: #3498db;
+                }
+                
+                .game-card:nth-child(11) .game-type {
                     background: #e3f2fd;
                     color: #3498db;
                 }
@@ -1512,6 +1571,20 @@ app.get('/games', (req, res) => {
                             </div>
                         </div>
                     </a>
+
+                    <!-- Candy Match Card -->
+                    <a href="/candy-match" class="game-card">
+                        <div class="game-card-image">
+                            <div class="game-card-icon">🍬</div>
+                        </div>
+                        <div class="game-card-content">
+                            <h2>Candy Match</h2>
+                            <p>Swap candies, make 3+ matches, and trigger sweet cascades.</p>
+                            <div style="margin-top: auto;">
+                                <span class="game-type">🍬 Solo</span>
+                            </div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="apk-download">
@@ -1583,6 +1656,10 @@ app.get('/quoridor', (req, res) => {
 
 app.get('/paint', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'paint.html'));
+});
+
+app.get('/candy-match', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'candy-match.html'));
 });
 
 // Health check endpoint — prevents hosting platforms from sleeping

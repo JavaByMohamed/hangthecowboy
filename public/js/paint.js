@@ -78,10 +78,13 @@ let gameState = {
     isDrawing: false,
     startX: 0,
     startY: 0,
+    lastX: 0,
+    lastY: 0,
     history: [],
     maxHistory: 50,
     currentPicture: ''
 };
+let shapePreviewSnapshot = null;
 
 // ==================== CANVAS DRAWING ====================
 
@@ -122,8 +125,32 @@ function drawBrush(x, y) {
     ctx.fill();
 }
 
+function drawBrushStroke(fromX, fromY, toX, toY) {
+    ctx.strokeStyle = gameState.color;
+    ctx.lineWidth = gameState.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+}
+
 function drawEraser(x, y) {
     ctx.clearRect(x - gameState.brushSize / 2, y - gameState.brushSize / 2, gameState.brushSize, gameState.brushSize);
+}
+
+function drawEraserStroke(fromX, fromY, toX, toY) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = gameState.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.restore();
 }
 
 function drawLine(fromX, fromY, toX, toY) {
@@ -151,6 +178,16 @@ function drawRectangle(startX, startY, endX, endY) {
     const width = endX - startX;
     const height = endY - startY;
     ctx.strokeRect(startX, startY, width, height);
+}
+
+function drawCurrentShape(endX, endY) {
+    if (gameState.tool === 'line') {
+        drawLine(gameState.startX, gameState.startY, endX, endY);
+    } else if (gameState.tool === 'circle') {
+        drawCircle(gameState.startX, gameState.startY, endX - gameState.startX, endY - gameState.startY);
+    } else if (gameState.tool === 'rect') {
+        drawRectangle(gameState.startX, gameState.startY, endX, endY);
+    }
 }
 
 function getCanvasCoords(e) {
@@ -216,7 +253,14 @@ function startDrawing(e) {
     const coords = getCanvasCoords(e);
     gameState.startX = coords.x;
     gameState.startY = coords.y;
+    gameState.lastX = coords.x;
+    gameState.lastY = coords.y;
     saveState();
+    shapePreviewSnapshot = null;
+
+    if (gameState.tool === 'line' || gameState.tool === 'circle' || gameState.tool === 'rect') {
+        shapePreviewSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
 
     if (gameState.tool === 'brush') {
         drawBrush(coords.x, coords.y);
@@ -225,8 +269,12 @@ function startDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                prevX: coords.x,
+                prevY: coords.y,
                 normalizedX: normalizeX(coords.x),
                 normalizedY: normalizeY(coords.y),
+                normalizedPrevX: normalizeX(coords.x),
+                normalizedPrevY: normalizeY(coords.y),
                 tool: 'brush',
                 color: gameState.color,
                 brushSize: gameState.brushSize
@@ -239,8 +287,12 @@ function startDrawing(e) {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                prevX: coords.x,
+                prevY: coords.y,
                 normalizedX: normalizeX(coords.x),
                 normalizedY: normalizeY(coords.y),
+                normalizedPrevX: normalizeX(coords.x),
+                normalizedPrevY: normalizeY(coords.y),
                 tool: 'eraser',
                 brushSize: gameState.brushSize
             });
@@ -254,44 +306,50 @@ function continueDrawing(e) {
     const coords = getCanvasCoords(e);
 
     if (gameState.tool === 'brush') {
-        drawBrush(coords.x, coords.y);
+        drawBrushStroke(gameState.lastX, gameState.lastY, coords.x, coords.y);
         if (gameMode === 'multiplayer' && gameId) {
             socket.emit('draw-stroke', {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                prevX: gameState.lastX,
+                prevY: gameState.lastY,
                 normalizedX: normalizeX(coords.x),
                 normalizedY: normalizeY(coords.y),
+                normalizedPrevX: normalizeX(gameState.lastX),
+                normalizedPrevY: normalizeY(gameState.lastY),
                 tool: 'brush',
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
         }
     } else if (gameState.tool === 'eraser') {
-        drawEraser(coords.x, coords.y);
+        drawEraserStroke(gameState.lastX, gameState.lastY, coords.x, coords.y);
         if (gameMode === 'multiplayer' && gameId) {
             socket.emit('draw-stroke', {
                 gameId,
                 x: coords.x,
                 y: coords.y,
+                prevX: gameState.lastX,
+                prevY: gameState.lastY,
                 normalizedX: normalizeX(coords.x),
                 normalizedY: normalizeY(coords.y),
+                normalizedPrevX: normalizeX(gameState.lastX),
+                normalizedPrevY: normalizeY(gameState.lastY),
                 tool: 'eraser',
                 brushSize: gameState.brushSize
             });
         }
     } else if (gameState.tool === 'line' || gameState.tool === 'circle' || gameState.tool === 'rect') {
-        // Preview shapes while dragging
-        restoreState(gameState.history[gameState.history.length - 1]);
-
-        if (gameState.tool === 'line') {
-            drawLine(gameState.startX, gameState.startY, coords.x, coords.y);
-        } else if (gameState.tool === 'circle') {
-            drawCircle(gameState.startX, gameState.startY, coords.x - gameState.startX, coords.y - gameState.startY);
-        } else if (gameState.tool === 'rect') {
-            drawRectangle(gameState.startX, gameState.startY, coords.x, coords.y);
+        // Preview shape synchronously to avoid flicker.
+        if (shapePreviewSnapshot) {
+            ctx.putImageData(shapePreviewSnapshot, 0, 0);
+            drawCurrentShape(coords.x, coords.y);
         }
     }
+
+    gameState.lastX = coords.x;
+    gameState.lastY = coords.y;
 }
 
 function endDrawing(e) {
@@ -302,6 +360,10 @@ function endDrawing(e) {
 
     // Handle shape tools on draw end
     if (gameState.tool === 'line') {
+        if (shapePreviewSnapshot) {
+            ctx.putImageData(shapePreviewSnapshot, 0, 0);
+        }
+        drawCurrentShape(coords.x, coords.y);
         if (gameMode === 'multiplayer' && gameId) {
             socket.emit('draw-shape', {
                 gameId,
@@ -319,6 +381,10 @@ function endDrawing(e) {
             });
         }
     } else if (gameState.tool === 'circle') {
+        if (shapePreviewSnapshot) {
+            ctx.putImageData(shapePreviewSnapshot, 0, 0);
+        }
+        drawCurrentShape(coords.x, coords.y);
         if (gameMode === 'multiplayer' && gameId) {
             socket.emit('draw-shape', {
                 gameId,
@@ -336,6 +402,10 @@ function endDrawing(e) {
             });
         }
     } else if (gameState.tool === 'rect') {
+        if (shapePreviewSnapshot) {
+            ctx.putImageData(shapePreviewSnapshot, 0, 0);
+        }
+        drawCurrentShape(coords.x, coords.y);
         if (gameMode === 'multiplayer' && gameId) {
             socket.emit('draw-shape', {
                 gameId,
@@ -353,6 +423,10 @@ function endDrawing(e) {
             });
         }
     }
+
+    shapePreviewSnapshot = null;
+    gameState.lastX = coords.x;
+    gameState.lastY = coords.y;
 }
 
 function attachCanvasEventListeners() {
@@ -597,17 +671,46 @@ socket.on('player-joined', (data) => {
 socket.on('draw-stroke', (data) => {
     const x = typeof data.normalizedX === 'number' ? denormalizeX(data.normalizedX) : data.x;
     const y = typeof data.normalizedY === 'number' ? denormalizeY(data.normalizedY) : data.y;
+    const prevX = typeof data.normalizedPrevX === 'number'
+        ? denormalizeX(data.normalizedPrevX)
+        : (typeof data.prevX === 'number' ? data.prevX : x);
+    const prevY = typeof data.normalizedPrevY === 'number'
+        ? denormalizeY(data.normalizedPrevY)
+        : (typeof data.prevY === 'number' ? data.prevY : y);
 
     ctx.fillStyle = data.color;
     ctx.strokeStyle = data.color;
     ctx.lineWidth = data.brushSize;
 
     if (data.tool === 'brush') {
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.arc(x, y, data.brushSize / 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        // Keep a crisp start point on first touch.
+        if (prevX === x && prevY === y) {
+            ctx.beginPath();
+            ctx.arc(x, y, data.brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
     } else if (data.tool === 'eraser') {
-        ctx.clearRect(x - data.brushSize / 2, y - data.brushSize / 2, data.brushSize, data.brushSize);
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = data.brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        if (prevX === x && prevY === y) {
+            ctx.beginPath();
+            ctx.arc(x, y, data.brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
     }
 });
 

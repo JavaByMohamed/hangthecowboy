@@ -97,6 +97,17 @@
             color: #333;
         }
 
+        .fill-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: normal !important;
+        }
+
+        .fill-toggle input {
+            margin: 0;
+        }
+
         .control-group input[type="color"] {
             width: 50px;
             height: 40px;
@@ -333,10 +344,19 @@
                     <div class="tool-buttons">
                         <button id="brushTool" class="active">✏️ Brush</button>
                         <button id="eraserTool">🧹 Eraser</button>
+                        <button id="fillTool">🪣 Fill</button>
                         <button id="lineTool">📏 Line</button>
                         <button id="circleTool">⭕ Circle</button>
                         <button id="rectTool">▭ Rectangle</button>
                     </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="fillShapesToggle">Shape Fill:</label>
+                    <label class="fill-toggle" for="fillShapesToggle">
+                        <input type="checkbox" id="fillShapesToggle">
+                        Fill inside
+                    </label>
                 </div>
 
                 <div class="action-buttons">

@@ -74,6 +74,8 @@ setInterval(() => fetch('/health').catch(() => {}), 4 * 60 * 1000);
 let gameState = {
     tool: 'brush',
     color: '#000000',
+    fillShape: false,
+    fillTolerance: 32,
     brushSize: 5,
     isDrawing: false,
     startX: 0,
@@ -89,10 +91,14 @@ let shapePreviewSnapshot = null;
 // ==================== CANVAS DRAWING ====================
 
 function saveState() {
+    pushHistoryState(canvas.toDataURL());
+}
+
+function pushHistoryState(stateImage) {
     if (gameState.history.length >= gameState.maxHistory) {
         gameState.history.shift();
     }
-    gameState.history.push(canvas.toDataURL());
+    gameState.history.push(stateImage);
 }
 
 function restoreState(imageData) {
@@ -164,30 +170,158 @@ function drawLine(fromX, fromY, toX, toY) {
     ctx.stroke();
 }
 
-function drawCircle(centerX, centerY, radiusX, radiusY) {
+function drawCircle(centerX, centerY, radiusX, radiusY, fillShape = false) {
     ctx.strokeStyle = gameState.color;
+    ctx.fillStyle = gameState.color;
     ctx.lineWidth = gameState.brushSize;
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, Math.abs(radiusX), Math.abs(radiusY), 0, 0, Math.PI * 2);
+    if (fillShape) {
+        ctx.fill();
+    }
     ctx.stroke();
 }
 
-function drawRectangle(startX, startY, endX, endY) {
+function drawRectangle(startX, startY, endX, endY, fillShape = false) {
     ctx.strokeStyle = gameState.color;
+    ctx.fillStyle = gameState.color;
     ctx.lineWidth = gameState.brushSize;
     const width = endX - startX;
     const height = endY - startY;
-    ctx.strokeRect(startX, startY, width, height);
+    ctx.beginPath();
+    ctx.rect(startX, startY, width, height);
+    if (fillShape) {
+        ctx.fill();
+    }
+    ctx.stroke();
 }
 
 function drawCurrentShape(endX, endY) {
     if (gameState.tool === 'line') {
         drawLine(gameState.startX, gameState.startY, endX, endY);
     } else if (gameState.tool === 'circle') {
-        drawCircle(gameState.startX, gameState.startY, endX - gameState.startX, endY - gameState.startY);
+        drawCircle(gameState.startX, gameState.startY, endX - gameState.startX, endY - gameState.startY, gameState.fillShape);
     } else if (gameState.tool === 'rect') {
-        drawRectangle(gameState.startX, gameState.startY, endX, endY);
+        drawRectangle(gameState.startX, gameState.startY, endX, endY, gameState.fillShape);
     }
+}
+
+function hexToRgb(hex) {
+    const normalized = hex.replace('#', '');
+    const value = parseInt(normalized, 16);
+    return {
+        r: (value >> 16) & 255,
+        g: (value >> 8) & 255,
+        b: value & 255
+    };
+}
+
+function colorsMatchWithinTolerance(data, index, target, tolerance) {
+    return (
+        Math.abs(data[index] - target.r) <= tolerance &&
+        Math.abs(data[index + 1] - target.g) <= tolerance &&
+        Math.abs(data[index + 2] - target.b) <= tolerance &&
+        Math.abs(data[index + 3] - target.a) <= tolerance
+    );
+}
+
+function applyFloodFill(startX, startY, colorHex, tolerance = gameState.fillTolerance) {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const clampedX = Math.max(0, Math.min(width - 1, Math.floor(startX)));
+    const clampedY = Math.max(0, Math.min(height - 1, Math.floor(startY)));
+    const startIndex = (clampedY * width + clampedX) * 4;
+
+    const fill = hexToRgb(colorHex);
+    const target = {
+        r: data[startIndex],
+        g: data[startIndex + 1],
+        b: data[startIndex + 2],
+        a: data[startIndex + 3]
+    };
+
+    if (
+        target.r === fill.r &&
+        target.g === fill.g &&
+        target.b === fill.b &&
+        target.a === 255
+    ) {
+        return false;
+    }
+
+    const queue = [[clampedX, clampedY]];
+    const visited = new Uint8Array(width * height);
+    const filled = new Uint8Array(width * height);
+    const safeTolerance = Math.max(0, Math.min(255, tolerance));
+
+    while (queue.length > 0) {
+        const [x, y] = queue.pop();
+        const pixelOffset = y * width + x;
+        if (visited[pixelOffset]) continue;
+        visited[pixelOffset] = 1;
+
+        const idx = pixelOffset * 4;
+        if (!colorsMatchWithinTolerance(data, idx, target, safeTolerance)) continue;
+
+        data[idx] = fill.r;
+        data[idx + 1] = fill.g;
+        data[idx + 2] = fill.b;
+        data[idx + 3] = 255;
+        filled[pixelOffset] = 1;
+
+        if (x > 0) queue.push([x - 1, y]);
+        if (x < width - 1) queue.push([x + 1, y]);
+        if (y > 0) queue.push([x, y - 1]);
+        if (y < height - 1) queue.push([x, y + 1]);
+        if (x > 0 && y > 0) queue.push([x - 1, y - 1]);
+        if (x < width - 1 && y > 0) queue.push([x + 1, y - 1]);
+        if (x > 0 && y < height - 1) queue.push([x - 1, y + 1]);
+        if (x < width - 1 && y < height - 1) queue.push([x + 1, y + 1]);
+    }
+
+    // Close anti-aliased halos near boundaries after fill.
+    const cleanupTolerance = Math.min(255, safeTolerance + 48);
+    for (let pass = 0; pass < 3; pass++) {
+        const markForFill = [];
+        for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+                const pixelOffset = y * width + x;
+                if (filled[pixelOffset]) continue;
+
+                const idx = pixelOffset * 4;
+                if (!colorsMatchWithinTolerance(data, idx, target, cleanupTolerance)) continue;
+
+                let filledNeighbors = 0;
+                for (let ny = -1; ny <= 1; ny++) {
+                    for (let nx = -1; nx <= 1; nx++) {
+                        if (nx === 0 && ny === 0) continue;
+                        const neighborOffset = (y + ny) * width + (x + nx);
+                        if (filled[neighborOffset]) filledNeighbors++;
+                    }
+                }
+
+                if (filledNeighbors >= 3) {
+                    markForFill.push(pixelOffset);
+                }
+            }
+        }
+
+        if (markForFill.length === 0) break;
+        for (const pixelOffset of markForFill) {
+            const idx = pixelOffset * 4;
+            data[idx] = fill.r;
+            data[idx + 1] = fill.g;
+            data[idx + 2] = fill.b;
+            data[idx + 3] = 255;
+            filled[pixelOffset] = 1;
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return true;
 }
 
 function getCanvasCoords(e) {
@@ -249,8 +383,30 @@ function resizeCanvasToDisplay() {
 // ==================== CANVAS EVENTS ====================
 
 function startDrawing(e) {
-    gameState.isDrawing = true;
     const coords = getCanvasCoords(e);
+
+    if (gameState.tool === 'fill') {
+        const previousState = canvas.toDataURL();
+        const didFill = applyFloodFill(coords.x, coords.y, gameState.color);
+        if (didFill) {
+            pushHistoryState(previousState);
+        }
+        if (didFill && gameMode === 'multiplayer' && gameId) {
+            socket.emit('fill-area', {
+                gameId,
+                x: coords.x,
+                y: coords.y,
+                normalizedX: normalizeX(coords.x),
+                normalizedY: normalizeY(coords.y),
+                color: gameState.color,
+                tolerance: gameState.fillTolerance
+            });
+        }
+        gameState.isDrawing = false;
+        return;
+    }
+
+    gameState.isDrawing = true;
     gameState.startX = coords.x;
     gameState.startY = coords.y;
     gameState.lastX = coords.x;
@@ -397,6 +553,7 @@ function endDrawing(e) {
                 normalizedCenterY: normalizeY(gameState.startY),
                 normalizedRadiusX: normalizeX(coords.x - gameState.startX),
                 normalizedRadiusY: normalizeY(coords.y - gameState.startY),
+                fillShape: gameState.fillShape,
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
@@ -418,6 +575,7 @@ function endDrawing(e) {
                 normalizedY1: normalizeY(gameState.startY),
                 normalizedX2: normalizeX(coords.x),
                 normalizedY2: normalizeY(coords.y),
+                fillShape: gameState.fillShape,
                 color: gameState.color,
                 brushSize: gameState.brushSize
             });
@@ -551,10 +709,15 @@ document.getElementById('brushSize').addEventListener('input', (e) => {
     document.getElementById('brushSizeDisplay').textContent = gameState.brushSize;
 });
 
+document.getElementById('fillShapesToggle').addEventListener('change', (e) => {
+    gameState.fillShape = e.target.checked;
+});
+
 // Tool selection
 const toolButtons = {
     brushTool: 'brush',
     eraserTool: 'eraser',
+    fillTool: 'fill',
     lineTool: 'line',
     circleTool: 'circle',
     rectTool: 'rect'
@@ -725,6 +888,7 @@ socket.on('draw-shape', (data) => {
     const radiusY = typeof data.normalizedRadiusY === 'number' ? denormalizeY(data.normalizedRadiusY) : data.radiusY;
 
     ctx.strokeStyle = data.color;
+    ctx.fillStyle = data.color;
     ctx.lineWidth = data.brushSize;
 
     if (data.type === 'line') {
@@ -735,12 +899,26 @@ socket.on('draw-shape', (data) => {
     } else if (data.type === 'circle') {
         ctx.beginPath();
         ctx.ellipse(centerX, centerY, Math.abs(radiusX), Math.abs(radiusY), 0, 0, Math.PI * 2);
+        if (data.fillShape) {
+            ctx.fill();
+        }
         ctx.stroke();
     } else if (data.type === 'rect') {
         const width = x2 - x1;
         const height = y2 - y1;
-        ctx.strokeRect(x1, y1, width, height);
+        ctx.beginPath();
+        ctx.rect(x1, y1, width, height);
+        if (data.fillShape) {
+            ctx.fill();
+        }
+        ctx.stroke();
     }
+});
+
+socket.on('fill-area', (data) => {
+    const x = typeof data.normalizedX === 'number' ? denormalizeX(data.normalizedX) : data.x;
+    const y = typeof data.normalizedY === 'number' ? denormalizeY(data.normalizedY) : data.y;
+    applyFloodFill(x, y, data.color, data.tolerance);
 });
 
 socket.on('clear-canvas', () => {

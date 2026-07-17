@@ -2997,6 +2997,12 @@ io.on('connection', (socket) => {
        io.to(gameId).emit('draw-stroke', {
            x: data.x,
            y: data.y,
+           prevX: data.prevX,
+           prevY: data.prevY,
+           normalizedX: data.normalizedX,
+           normalizedY: data.normalizedY,
+           normalizedPrevX: data.normalizedPrevX,
+           normalizedPrevY: data.normalizedPrevY,
            tool: data.tool,
            color: data.color,
            brushSize: data.brushSize
@@ -3015,12 +3021,37 @@ io.on('connection', (socket) => {
            y1: data.y1,
            x2: data.x2,
            y2: data.y2,
+           normalizedX1: data.normalizedX1,
+           normalizedY1: data.normalizedY1,
+           normalizedX2: data.normalizedX2,
+           normalizedY2: data.normalizedY2,
            centerX: data.centerX,
            centerY: data.centerY,
            radiusX: data.radiusX,
            radiusY: data.radiusY,
+           normalizedCenterX: data.normalizedCenterX,
+           normalizedCenterY: data.normalizedCenterY,
+           normalizedRadiusX: data.normalizedRadiusX,
+           normalizedRadiusY: data.normalizedRadiusY,
+           fillShape: data.fillShape,
            color: data.color,
            brushSize: data.brushSize
+       });
+    });
+
+    socket.on('fill-area', (data) => {
+       const { gameId } = data;
+       if (!paintGames[gameId]) {
+          console.log('⚠️ Fill-area: Invalid game:', gameId);
+          return;
+       }
+       io.to(gameId).emit('fill-area', {
+          x: data.x,
+          y: data.y,
+          normalizedX: data.normalizedX,
+          normalizedY: data.normalizedY,
+          color: data.color,
+          tolerance: data.tolerance
        });
     });
 
